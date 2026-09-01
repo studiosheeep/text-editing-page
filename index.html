@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+<title>漫画原稿 記法エディタ</title>
+<style>
+/* =========================
+   基本設定
+========================= */
+* {
+    box-sizing: border-box;
+}
+body {
+    margin: 0;
+    padding: 20px;
+    background: #f4f4f6;
+    color: #222;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        sans-serif;
+}
+.container {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+h1 {
+    font-size: 24px;
+    margin: 0 0 20px;
+}
+h2 {
+    font-size: 18px;
+    margin: 0 0 15px;
+}
+/* =========================
+   GUI
+========================= */
+.gui-section {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.gui-title {
+    font-weight: bold;
+    font-size: 16px;
+    margin-bottom: 14px;
+}
+.input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.input-row:last-child {
+    margin-bottom: 0;
+}
+.input-label {
+    white-space: nowrap;
+}
+input {
+    flex: 1;
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    background: #fff;
+}
+input:focus {
+    outline: none;
+    border-color: #777;
+}
+button {
+    padding: 9px 15px;
+    border: none;
+    border-radius: 6px;
+    background: #333;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+button:hover {
+    opacity: 0.85;
+}
+button:active {
+    transform: translateY(1px);
+}
+/* =========================
+   編集エリア
+========================= */
+.editor-section {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.editor-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 400px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+/*
+   ハイライト表示用
+   textareaと全く同じ文字サイズ・行間・余白にして、
+   textareaの下に配置する。
+*/
+.highlight-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 14px;
+    font-size: 16px;
+    line-height: 1.7;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        sans-serif;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow: hidden;
+    pointer-events: none;
+    color: #222;
+}
+/*
+   実際に入力するtextarea
+   文字自体は透明にして、
+   下のハイライト表示を見せる。
+   caret-colorだけ黒にすることで、
+   カーソルは通常どおり見える。
+*/
+#editor {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 14px;
+    border: none;
+    outline: none;
+    resize: vertical;
+    background: transparent;
+    font-size: 16px;
+    line-height: 1.7;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic", sans-serif;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow: auto;
+    color: transparent;
+    caret-color: #222;
+    z-index: 2;
+}
+/* =========================
+   ハイライト色
+========================= */
+.highlight {
+    border-radius: 3px;
+    padding: 1px 2px;
+}
+/* p001〜p999 */
+.highlight-page {
+    background: #ddd8f2;
+}
+/* #上中下 / #右左 */
+.highlight-panel {
+    background: #bfe8f0;
+}
+/* @数字 */
+.highlight-placement {
+    background: #f4c477;
+}
+/* ＊モデル名 */
+.highlight-model {
+    background: #c9eb9a;
+}
+/* :プリセット名 */
+.highlight-preset {
+    background: #f2b8d1;
+}
+/* =========================
+   下部ボタン
+========================= */
+.editor-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+.editor-buttons button {
+    flex: 1;
+}
+/* =========================
+   説明
+========================= */
+.description {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #777;
+}
+/* =========================
+   スマートフォン
+========================= */
+@media (max-width: 600px) {
+    body {
+        padding: 12px;
+    }
+    h1 {
+        font-size: 21px;
+    }
+    .gui-section,
+    .editor-section {
+        padding: 14px;
+    }
+    .input-row {
+        flex-wrap: wrap;
+    }
+    .input-label {
+        width: 100%;
+    }
+    input {
+        flex: 1;
+    }
+    .editor-wrapper {
+        min-height: 450px;
+    }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>漫画原稿 記法エディタ</h1>
+<!-- ==================================================
+     ページ
+================================================== -->
+<div class="gui-section">
+    <div class="gui-title">
+        ページ
+    </div>
+    <div class="input-row">
+        <span class="input-label">
+            ページ
+        </span>
+        <input
+            id="page"
+            type="number"
+            min="1"
+            max="999"
+            placeholder="001〜999"
+        >
+        <span>ページ</span>
+        <button onclick="insertPage()">
+            記入
+        </button>
+    </div>
+</div>
+<!-- ==================================================
+     上・中・下
+================================================== -->
+<div class="gui-section">
+    <div class="gui-title">
+        上・中・下コマ
+    </div>
+    <div class="input-row">
+        <span class="input-label">
+            上段
+        </span>
+        <input
+            id="top"
+            type="text"
+            placeholder="数字"
+        >
+        <span>コマ</span>
+        <button onclick="insertVerticalPanels()">
+            記入
+        </button>
+    </div>
+    <div class="input-row">
+        <span class="input-label">
+            中段
+        </span>
+        <input
+            id="middle"
+            type="text"
+            placeholder="数字"
+        >
+        <span>コマ</span>
+        <button onclick="insertVerticalPanels()">
+            記入
+        </button>
+    </div>
+    <div class="input-row">
+        <span class="input-label">
+            下段
+        </span>
+        <input
+            id="bottom"
+            type="text"
+            placeholder="数字"
+        >
+        <span>コマ</span>
+        <button onclick="insertVerticalPanels()">
+            記入
+        </button>
+    </div>
+</div>
+<!-- ==================================================
+     右・左
+================================================== -->
+<div class="gui-section">
+    <div class="gui-title">
+        右・左コマ
+    </div>
+    <div class="input-row">
+        <span class="input-label">
+            右段
+        </span>
+        <input
+            id="right"
+            type="text"
+            placeholder="数字"
+        >
+        <span>コマ</span>
+        <button onclick="insertHorizontalPanels()">
+            記入
+        </button>
+    </div>
+    <div class="input-row">
+        <span class="input-label">
+            左段
+        </span>
+        <input
+            id="left"
+            type="text"
+            placeholder="数字"
+        >
+        <span>コマ</span>
+        <button onclick="insertHorizontalPanels()">
+            記入
+        </button>
+    </div>
+</div>
+<!-- ==================================================
+     Live2D
+================================================== -->
+<div class="gui-section">
+    <div class="gui-title">
+        Live2Dモデル
+    </div>
+    <div class="input-row">
+        <span class="input-label">
+            Live2Dモデル名
+        </span>
+        <input
+            id="model"
+            type="text"
+            placeholder="モデル名"
+        >
+        <button onclick="insertLive2D()">
+            記入
+        </button>
+    </div>
+    <div class="input-row">
+        <span class="input-label">
+            プリセット名
+        </span>
+        <input
+            id="preset"
+            type="text"
+            placeholder="プリセット名"
+        >
+        <button onclick="insertLive2D()">
+            記入
+        </button>
+    </div>
+</div>
+<!-- ==================================================
+     配置先
+================================================== -->
+<div class="gui-section">
+    <div class="gui-title">
+        配置先
+    </div>
+    <div class="input-row">
+        <span class="input-label">
+            テキスト/Live2Dモデル配置先
+        </span>
+        <input
+            id="placement"
+            type="text"
+            placeholder="コマ番号"
+        >
+        <span>コマ目</span>
+        <button onclick="insertPlacement()">
+            記入
+        </button>
+    </div>
+    <div class="description">
+        カーソル位置に @数字 を挿入します。改行は入りません。
+    </div>
+</div>
+<!-- ==================================================
+     編集エリア
+================================================== -->
+<div class="editor-section">
+    <h2>
+        原稿
+    </h2>
+    <div class="editor-wrapper">
+        <!-- ハイライト表示 -->
+        <div
+            id="highlight"
+            class="highlight-layer"
+        ></div>
+        <!-- 実際の入力欄 -->
+        <textarea
+            id="editor"
+            spellcheck="false"
+            placeholder="ここに文章を入力してください。&#10;&#10;上のGUIから記法をカーソル位置に挿入できます。"
+        ></textarea>
+    </div>
+    <div class="editor-buttons">
+        <button onclick="copyText()">
+            コピー
+        </button>
+        <button onclick="saveTxt()">
+            TXT保存
+        </button>
+    </div>
+</div>
+</div>
+<script>
+/* ==================================================
+   基本処理
+================================================== */
+const editor =
+    document.getElementById("editor");
+const highlight =
+    document.getElementById("highlight");
+/*
+   HTMLエスケープ
+*/
+function escapeHTML(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+/*
+   カーソル位置に文字を挿入
+*/
+function insertAtCursor(text) {
+    const start =
+        editor.selectionStart;
+    const end =
+        editor.selectionEnd;
+    const current =
+        editor.value;
+    editor.value =
+        current.substring(0, start)
+        + text
+        + current.substring(end);
+    /*
+       挿入後もカーソルを
+       挿入した文字の直後に置く
+    */
+    const newPosition =
+        start + text.length;
+    editor.focus();
+    editor.setSelectionRange(
+        newPosition,
+        newPosition
+    );
+    updateHighlight();
+}
+/* ==================================================
+   ページ
+================================================== */
+function insertPage() {
+    const value =
+        document.getElementById("page").value;
+    if (!value) {
+        return;
+    }
+    const number =
+        Number(value);
+    if (
+        !Number.isInteger(number) ||
+        number < 1 ||
+        number > 999
+    ) {
+        alert(
+            "001〜999の数字を入力してください。"
+        );
+        return;
+    }
+    const page =
+        String(number).padStart(3, "0");
+    insertAtCursor(
+        `p${page}\n`
+    );
+}
+/* ==================================================
+   上・中・下
+================================================== */
+function insertVerticalPanels() {
+    const top =
+        document.getElementById("top").value;
+    const middle =
+        document.getElementById("middle").value;
+    const bottom =
+        document.getElementById("bottom").value;
+    if (
+        !top &&
+        !middle &&
+        !bottom
+    ) {
+        return;
+    }
+    insertAtCursor(
+        `#上${top}中${middle}下${bottom}\n`
+    );
+}
+/* ==================================================
+   右・左
+================================================== */
+function insertHorizontalPanels() {
+    const right =
+        document.getElementById("right").value;
+    const left =
+        document.getElementById("left").value;
+    if (
+        !right &&
+        !left
+    ) {
+        return;
+    }
+    insertAtCursor(
+        `#右${right}左${left}\n`
+    );
+}
+/* ==================================================
+   Live2D
+================================================== */
+function insertLive2D() {
+    const model =
+        document.getElementById("model").value;
+    const preset =
+        document.getElementById("preset").value;
+    if (
+        !model &&
+        !preset
+    ) {
+        return;
+    }
+    insertAtCursor(
+        `＊${model}:${preset}`
+    );
+}
+/* ==================================================
+   配置先
+================================================== */
+function insertPlacement() {
+    const placement =
+        document.getElementById("placement").value;
+    if (!placement) {
+        return;
+    }
+    /*
+       改行を入れず、
+       カーソル位置に直接追加
+    */
+    insertAtCursor(
+        `@${placement}`
+    );
+}
+/* ==================================================
+   ハイライト処理
+================================================== */
+function highlightText(text) {
+    /*
+       HTMLとして解釈されないようにする
+    */
+    let result =
+        escapeHTML(text);
+    /*
+       一時的なトークンに置き換える。
+       先に各記法を保護しておくことで、
+       例えばモデル名の中に記号があっても
+       色が重複しにくくする。
+    */
+    const tokens = [];
+    function token(html) {
+        const id =
+            `___TOKEN_${tokens.length}___`;
+        tokens.push(html);
+        return id;
+    }
+    /*
+       p001〜p999
+    */
+    result =
+        result.replace(
+            /p\d{3}\b/g,
+            match => token(
+                `<span class="highlight highlight-page">${match}</span>`
+            )
+        );
+    /*
+       #上中下
+    */
+    result =
+        result.replace(
+            /#上[^\n]*?中[^\n]*?下[^\n]*/g,
+            match => token(
+                `<span class="highlight highlight-panel">${match}</span>`
+            )
+        );
+    /*
+       #右左
+    */
+    result =
+        result.replace(
+            /#右[^\n]*?左[^\n]*/g,
+            match => token(
+                `<span class="highlight highlight-panel">${match}</span>`
+            )
+        );
+    /*
+       ＊モデル名
+       コロンの直前までをモデル名とする。
+    */
+    result =
+        result.replace(
+            /＊[^:\n@]*/g,
+            match => token(
+                `<span class="highlight highlight-model">${match}</span>`
+            )
+        );
+    /*
+       :プリセット名
+       @または改行までをプリセット名とする。
+    */
+    result =
+        result.replace(
+            /:[^@\n]*/g,
+            match => token(
+                `<span class="highlight highlight-preset">${match}</span>`
+            )
+        );
+    /*
+       @数字
+    */
+    result =
+        result.replace(
+            /@\d+/g,
+            match => token(
+                `<span class="highlight highlight-placement">${match}</span>`
+            )
+        );
+    /*
+       トークンを元に戻す
+    */
+    tokens.forEach(
+        (html, index) => {
+            result =
+                result.replace(
+                    `___TOKEN_${index}___`,
+                    html
+                );
+        }
+    );
+    /*
+       textareaと同じ位置関係にするため、
+       最後に改行を1つ追加
+    */
+    if (text.endsWith("\n")) {
+        result += "\n";
+    }
+    return result;
+}
+/*
+   ハイライト更新
+*/
+function updateHighlight() {
+    highlight.innerHTML =
+        highlightText(editor.value);
+    /*
+       textareaとハイライトの
+       スクロール位置を同期
+    */
+    highlight.scrollTop =
+        editor.scrollTop;
+    highlight.scrollLeft =
+        editor.scrollLeft;
+}
+/* ==================================================
+   入力時
+================================================== */
+editor.addEventListener(
+    "input",
+    updateHighlight
+);
+editor.addEventListener(
+    "scroll",
+    function() {
+        highlight.scrollTop =
+            editor.scrollTop;
+        highlight.scrollLeft =
+            editor.scrollLeft;
+    }
+);
+/* ==================================================
+   コピー
+================================================== */
+function copyText() {
+    const text =
+        editor.value;
+    if (!text) {
+        return;
+    }
+    navigator.clipboard
+        .writeText(text)
+        .then(() => {
+            alert("コピーしました。");
+        })
+        .catch(() => {
+            /*
+               古いブラウザ用
+            */
+            editor.focus();
+            editor.select();
+            document.execCommand("copy");
+            alert("コピーしました。");
+        });
+}
+/* ==================================================
+   TXT保存
+================================================== */
+function saveTxt() {
+    const text =
+        editor.value;
+    if (!text) {
+        alert(
+            "保存する文章がありません。"
+        );
+        return;
+    }
+    /*
+       UTF-8のTXTを作成
+    */
+    const blob =
+        new Blob(
+            [text],
+            {
+                type:
+                    "text/plain;charset=utf-8"
+            }
+        );
+    const url =
+        URL.createObjectURL(blob);
+    const link =
+        document.createElement("a");
+    link.href = url;
+    link.download =
+        "漫画原稿.txt";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+/* ==================================================
+   初期表示
+================================================== */
+updateHighlight();
+</script>
+</body>
+</html>
