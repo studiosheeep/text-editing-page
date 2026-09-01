@@ -4,19 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0">
-<title>漫画原稿 記法エディタ</title>
+<title>漫画原稿エディタ</title>
 <style>
-/* =========================
-   基本設定
-========================= */
+/* =====================================================
+   基本
+===================================================== */
 * {
     box-sizing: border-box;
 }
+html,
 body {
     margin: 0;
-    padding: 20px;
-    background: #f4f4f6;
-    color: #222;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #f5f5f7;
     font-family:
         -apple-system,
         BlinkMacSystemFont,
@@ -24,98 +26,183 @@ body {
         "Hiragino Kaku Gothic ProN",
         "Yu Gothic",
         sans-serif;
+    color: #222;
 }
-.container {
+/* =====================================================
+   アプリ全体
+===================================================== */
+.app {
     width: 100%;
     max-width: 900px;
     margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
-h1 {
-    font-size: 24px;
-    margin: 0 0 20px;
-}
-h2 {
-    font-size: 18px;
-    margin: 0 0 15px;
-}
-/* =========================
-   GUI
-========================= */
-.gui-section {
+/* =====================================================
+   ヘッダー
+===================================================== */
+.header {
+    padding: 12px 14px;
     background: #ffffff;
-    border-radius: 10px;
-    padding: 18px;
-    margin-bottom: 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    border-bottom: 1px solid #ddd;
 }
-.gui-title {
+.header-title {
+    font-size: 18px;
     font-weight: bold;
-    font-size: 16px;
-    margin-bottom: 14px;
 }
+/* =====================================================
+   アイコンツールバー
+===================================================== */
+.toolbar {
+    display: flex;
+    width: 100%;
+    background: #ffffff;
+    border-bottom: 1px solid #ddd;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+/*
+   アイコン1個
+*/
+.tool-button {
+    flex: 1 0 20%;
+    min-width: 65px;
+    height: 64px;
+    border: none;
+    background: #ffffff;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    border-right: 1px solid #eee;
+    font-size: 12px;
+}
+/*
+   アイコン
+*/
+.tool-icon {
+    font-size: 25px;
+    line-height: 1;
+}
+/*
+   選択中
+*/
+.tool-button.active {
+    background: #eeeeF3;
+}
+/* =====================================================
+   入力パネル
+===================================================== */
+.panel-container {
+    background: #ffffff;
+    border-bottom: 1px solid #ddd;
+}
+/*
+   パネル本体
+*/
+.input-panel {
+    display: none;
+    padding: 14px;
+}
+/*
+   表示中のパネル
+*/
+.input-panel.active {
+    display: block;
+}
+/*
+   パネルタイトル
+*/
+.panel-title {
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+/*
+   入力行
+*/
 .input-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 7px;
+    margin-bottom: 9px;
 }
-.input-row:last-child {
-    margin-bottom: 0;
-}
+/*
+   ラベル
+*/
 .input-label {
-    white-space: nowrap;
+    min-width: 48px;
+    font-size: 14px;
 }
+/*
+   入力
+*/
 input {
     flex: 1;
     min-width: 0;
-    padding: 9px 10px;
+    height: 42px;
+    padding: 8px 10px;
     border: 1px solid #ccc;
-    border-radius: 6px;
+    border-radius: 7px;
     font-size: 16px;
     background: #fff;
 }
 input:focus {
     outline: none;
-    border-color: #777;
+    border-color: #888;
 }
-button {
-    padding: 9px 15px;
+/*
+   記入ボタン
+*/
+.insert-button {
+    height: 42px;
+    padding: 0 15px;
     border: none;
-    border-radius: 6px;
+    border-radius: 7px;
     background: #333;
-    color: #fff;
+    color: white;
     font-size: 14px;
-    cursor: pointer;
     white-space: nowrap;
 }
-button:hover {
-    opacity: 0.85;
+/*
+   パネルを閉じる
+*/
+.close-panel {
+    width: 100%;
+    height: 36px;
+    margin-top: 3px;
+    border: none;
+    background: #f1f1f1;
+    border-radius: 6px;
+    color: #555;
 }
-button:active {
-    transform: translateY(1px);
+/* =====================================================
+   エディタ
+===================================================== */
+.editor-area {
+    flex: 1;
+    padding: 12px;
 }
-/* =========================
-   編集エリア
-========================= */
-.editor-section {
-    background: #ffffff;
-    border-radius: 10px;
-    padding: 18px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
+/*
+   エディタ本体
+*/
 .editor-wrapper {
     position: relative;
     width: 100%;
-    min-height: 400px;
+    min-height: 60vh;
+    height: calc(100vh - 180px);
+    max-height: 900px;
     border: 1px solid #ccc;
-    border-radius: 8px;
+    border-radius: 9px;
+    background: white;
     overflow: hidden;
-    background: #fff;
 }
 /*
-   ハイライト表示用
-   textareaと全く同じ文字サイズ・行間・余白にして、
-   textareaの下に配置する。
+   ハイライト層
 */
 .highlight-layer {
     position: absolute;
@@ -140,11 +227,7 @@ button:active {
     color: #222;
 }
 /*
-   実際に入力するtextarea
-   文字自体は透明にして、
-   下のハイライト表示を見せる。
-   caret-colorだけ黒にすることで、
-   カーソルは通常どおり見える。
+   実際の入力欄
 */
 #editor {
     position: absolute;
@@ -155,7 +238,7 @@ button:active {
     padding: 14px;
     border: none;
     outline: none;
-    resize: vertical;
+    resize: none;
     background: transparent;
     font-size: 16px;
     line-height: 1.7;
@@ -172,89 +255,154 @@ button:active {
     caret-color: #222;
     z-index: 2;
 }
-/* =========================
-   ハイライト色
-========================= */
+/* =====================================================
+   ハイライト
+===================================================== */
 .highlight {
     border-radius: 3px;
     padding: 1px 2px;
 }
-/* p001〜p999 */
+/*
+   ページ
+   p001〜p999
+*/
 .highlight-page {
     background: #ddd8f2;
 }
-/* #上中下 / #右左 */
+/*
+   #上中下
+   #右左
+*/
 .highlight-panel {
     background: #bfe8f0;
 }
-/* @数字 */
+/*
+   @数字
+*/
 .highlight-placement {
     background: #f4c477;
 }
-/* ＊モデル名 */
+/*
+   ＊モデル名
+*/
 .highlight-model {
     background: #c9eb9a;
 }
-/* :プリセット名 */
+/*
+   :プリセット名
+*/
 .highlight-preset {
     background: #f2b8d1;
 }
-/* =========================
+/* =====================================================
    下部ボタン
-========================= */
+===================================================== */
 .editor-buttons {
     display: flex;
-    gap: 10px;
-    margin-top: 12px;
+    gap: 8px;
+    margin-top: 10px;
 }
 .editor-buttons button {
     flex: 1;
+    height: 44px;
+    border: none;
+    border-radius: 7px;
+    background: #333;
+    color: white;
+    font-size: 14px;
 }
-/* =========================
-   説明
-========================= */
-.description {
-    margin-top: 8px;
-    font-size: 13px;
-    color: #777;
-}
-/* =========================
-   スマートフォン
-========================= */
+/* =====================================================
+   スマートフォン調整
+===================================================== */
 @media (max-width: 600px) {
-    body {
-        padding: 12px;
+    .header {
+        padding: 10px 12px;
     }
-    h1 {
-        font-size: 21px;
+    .header-title {
+        font-size: 17px;
     }
-    .gui-section,
-    .editor-section {
-        padding: 14px;
+    .tool-button {
+        min-width: 64px;
+        height: 60px;
     }
-    .input-row {
-        flex-wrap: wrap;
+    .tool-icon {
+        font-size: 23px;
     }
-    .input-label {
-        width: 100%;
-    }
-    input {
-        flex: 1;
+    .editor-area {
+        padding: 8px;
     }
     .editor-wrapper {
-        min-height: 450px;
+        height: calc(100vh - 170px);
+        min-height: 500px;
     }
 }
 </style>
 </head>
 <body>
-<div class="container">
-<h1>漫画原稿 記法エディタ</h1>
-<!-- ==================================================
-     ページ
-================================================== -->
-<div class="gui-section">
-    <div class="gui-title">
+<div class="app">
+<!-- =================================================
+     タイトル
+================================================= -->
+<div class="header">
+    <div class="header-title">
+        漫画原稿エディタ
+    </div>
+</div>
+<!-- =================================================
+     アイコン
+================================================= -->
+<div class="toolbar">
+    <button
+        class="tool-button"
+        data-panel="page-panel"
+        onclick="togglePanel('page-panel', this)"
+    >
+        <span class="tool-icon">📄</span>
+        <span>ページ</span>
+    </button>
+    <button
+        class="tool-button"
+        data-panel="vertical-panel"
+        onclick="togglePanel('vertical-panel', this)"
+    >
+        <span class="tool-icon">▤</span>
+        <span>上中下</span>
+    </button>
+    <button
+        class="tool-button"
+        data-panel="horizontal-panel"
+        onclick="togglePanel('horizontal-panel', this)"
+    >
+        <span class="tool-icon">▥</span>
+        <span>右左</span>
+    </button>
+    <button
+        class="tool-button"
+        data-panel="live2d-panel"
+        onclick="togglePanel('live2d-panel', this)"
+    >
+        <span class="tool-icon">👤</span>
+        <span>Live2D</span>
+    </button>
+    <button
+        class="tool-button"
+        data-panel="placement-panel"
+        onclick="togglePanel('placement-panel', this)"
+    >
+        <span class="tool-icon">@</span>
+        <span>配置先</span>
+    </button>
+</div>
+<!-- =================================================
+     入力パネル
+================================================= -->
+<div class="panel-container">
+<!-- ================= ページ ================= -->
+<div
+    id="page-panel"
+    class="input-panel"
+>
+    <div class="panel-title">
         ページ
     </div>
     <div class="input-row">
@@ -268,17 +416,29 @@ button:active {
             max="999"
             placeholder="001〜999"
         >
-        <span>ページ</span>
-        <button onclick="insertPage()">
+        <span>
+            ページ
+        </span>
+        <button
+            class="insert-button"
+            onclick="insertPage()"
+        >
             記入
         </button>
     </div>
+    <button
+        class="close-panel"
+        onclick="closePanels()"
+    >
+        閉じる
+    </button>
 </div>
-<!-- ==================================================
-     上・中・下
-================================================== -->
-<div class="gui-section">
-    <div class="gui-title">
+<!-- ================= 上中下 ================= -->
+<div
+    id="vertical-panel"
+    class="input-panel"
+>
+    <div class="panel-title">
         上・中・下コマ
     </div>
     <div class="input-row">
@@ -288,10 +448,14 @@ button:active {
         <input
             id="top"
             type="text"
+            inputmode="numeric"
             placeholder="数字"
         >
         <span>コマ</span>
-        <button onclick="insertVerticalPanels()">
+        <button
+            class="insert-button"
+            onclick="insertVerticalPanels()"
+        >
             記入
         </button>
     </div>
@@ -302,12 +466,10 @@ button:active {
         <input
             id="middle"
             type="text"
+            inputmode="numeric"
             placeholder="数字"
         >
         <span>コマ</span>
-        <button onclick="insertVerticalPanels()">
-            記入
-        </button>
     </div>
     <div class="input-row">
         <span class="input-label">
@@ -316,19 +478,24 @@ button:active {
         <input
             id="bottom"
             type="text"
+            inputmode="numeric"
             placeholder="数字"
         >
         <span>コマ</span>
-        <button onclick="insertVerticalPanels()">
-            記入
-        </button>
     </div>
+    <button
+        class="close-panel"
+        onclick="closePanels()"
+    >
+        閉じる
+    </button>
 </div>
-<!-- ==================================================
-     右・左
-================================================== -->
-<div class="gui-section">
-    <div class="gui-title">
+<!-- ================= 右左 ================= -->
+<div
+    id="horizontal-panel"
+    class="input-panel"
+>
+    <div class="panel-title">
         右・左コマ
     </div>
     <div class="input-row">
@@ -338,10 +505,14 @@ button:active {
         <input
             id="right"
             type="text"
+            inputmode="numeric"
             placeholder="数字"
         >
         <span>コマ</span>
-        <button onclick="insertHorizontalPanels()">
+        <button
+            class="insert-button"
+            onclick="insertHorizontalPanels()"
+        >
             記入
         </button>
     </div>
@@ -352,91 +523,105 @@ button:active {
         <input
             id="left"
             type="text"
+            inputmode="numeric"
             placeholder="数字"
         >
         <span>コマ</span>
-        <button onclick="insertHorizontalPanels()">
-            記入
-        </button>
     </div>
+    <button
+        class="close-panel"
+        onclick="closePanels()"
+    >
+        閉じる
+    </button>
 </div>
-<!-- ==================================================
-     Live2D
-================================================== -->
-<div class="gui-section">
-    <div class="gui-title">
+<!-- ================= Live2D ================= -->
+<div
+    id="live2d-panel"
+    class="input-panel"
+>
+    <div class="panel-title">
         Live2Dモデル
     </div>
     <div class="input-row">
         <span class="input-label">
-            Live2Dモデル名
+            モデル名
         </span>
         <input
             id="model"
             type="text"
             placeholder="モデル名"
         >
-        <button onclick="insertLive2D()">
+        <button
+            class="insert-button"
+            onclick="insertLive2D()"
+        >
             記入
         </button>
     </div>
     <div class="input-row">
         <span class="input-label">
-            プリセット名
+            プリセット
         </span>
         <input
             id="preset"
             type="text"
             placeholder="プリセット名"
         >
-        <button onclick="insertLive2D()">
-            記入
-        </button>
     </div>
+    <button
+        class="close-panel"
+        onclick="closePanels()"
+    >
+        閉じる
+    </button>
 </div>
-<!-- ==================================================
-     配置先
-================================================== -->
-<div class="gui-section">
-    <div class="gui-title">
-        配置先
+<!-- ================= 配置先 ================= -->
+<div
+    id="placement-panel"
+    class="input-panel"
+>
+    <div class="panel-title">
+        テキスト / Live2Dモデル配置先
     </div>
     <div class="input-row">
-        <span class="input-label">
-            テキスト/Live2Dモデル配置先
-        </span>
         <input
             id="placement"
             type="text"
+            inputmode="numeric"
             placeholder="コマ番号"
         >
         <span>コマ目</span>
-        <button onclick="insertPlacement()">
+        <button
+            class="insert-button"
+            onclick="insertPlacement()"
+        >
             記入
         </button>
     </div>
-    <div class="description">
-        カーソル位置に @数字 を挿入します。改行は入りません。
-    </div>
+    <button
+        class="close-panel"
+        onclick="closePanels()"
+    >
+        閉じる
+    </button>
 </div>
-<!-- ==================================================
-     編集エリア
-================================================== -->
-<div class="editor-section">
-    <h2>
-        原稿
-    </h2>
+</div>
+<!-- =================================================
+     エディタ
+================================================= -->
+<div class="editor-area">
     <div class="editor-wrapper">
-        <!-- ハイライト表示 -->
+        <!-- ハイライト -->
         <div
             id="highlight"
             class="highlight-layer"
         ></div>
-        <!-- 実際の入力欄 -->
+        <!-- 入力欄 -->
         <textarea
             id="editor"
             spellcheck="false"
-            placeholder="ここに文章を入力してください。&#10;&#10;上のGUIから記法をカーソル位置に挿入できます。"
+            placeholder="ここに文章を入力してください。&#10;&#10;上のアイコンから記法を挿入できます。"
         ></textarea>
     </div>
     <div class="editor-buttons">
@@ -450,27 +635,56 @@ button:active {
 </div>
 </div>
 <script>
-/* ==================================================
-   基本処理
-================================================== */
+/* =====================================================
+   エディタ
+===================================================== */
 const editor =
     document.getElementById("editor");
 const highlight =
     document.getElementById("highlight");
-/*
-   HTMLエスケープ
-*/
-function escapeHTML(text) {
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
+/* =====================================================
+   パネル切り替え
+===================================================== */
+function togglePanel(panelId, button) {
+    const panel =
+        document.getElementById(panelId);
+    const isActive =
+        panel.classList.contains("active");
+    /*
+       全パネルを閉じる
+    */
+    closePanels();
+    /*
+       すでに開いていた場合は
+       そのまま閉じる
+    */
+    if (isActive) {
+        return;
+    }
+    /*
+       パネルを開く
+    */
+    panel.classList.add("active");
+    button.classList.add("active");
 }
 /*
-   カーソル位置に文字を挿入
+   全パネルを閉じる
 */
+function closePanels() {
+    document
+        .querySelectorAll(".input-panel")
+        .forEach(panel => {
+            panel.classList.remove("active");
+        });
+    document
+        .querySelectorAll(".tool-button")
+        .forEach(button => {
+            button.classList.remove("active");
+        });
+}
+/* =====================================================
+   カーソル位置へ挿入
+===================================================== */
 function insertAtCursor(text) {
     const start =
         editor.selectionStart;
@@ -482,10 +696,6 @@ function insertAtCursor(text) {
         current.substring(0, start)
         + text
         + current.substring(end);
-    /*
-       挿入後もカーソルを
-       挿入した文字の直後に置く
-    */
     const newPosition =
         start + text.length;
     editor.focus();
@@ -495,9 +705,9 @@ function insertAtCursor(text) {
     );
     updateHighlight();
 }
-/* ==================================================
+/* =====================================================
    ページ
-================================================== */
+===================================================== */
 function insertPage() {
     const value =
         document.getElementById("page").value;
@@ -522,9 +732,9 @@ function insertPage() {
         `p${page}\n`
     );
 }
-/* ==================================================
+/* =====================================================
    上・中・下
-================================================== */
+===================================================== */
 function insertVerticalPanels() {
     const top =
         document.getElementById("top").value;
@@ -543,9 +753,9 @@ function insertVerticalPanels() {
         `#上${top}中${middle}下${bottom}\n`
     );
 }
-/* ==================================================
+/* =====================================================
    右・左
-================================================== */
+===================================================== */
 function insertHorizontalPanels() {
     const right =
         document.getElementById("right").value;
@@ -561,9 +771,9 @@ function insertHorizontalPanels() {
         `#右${right}左${left}\n`
     );
 }
-/* ==================================================
+/* =====================================================
    Live2D
-================================================== */
+===================================================== */
 function insertLive2D() {
     const model =
         document.getElementById("model").value;
@@ -579,9 +789,9 @@ function insertLive2D() {
         `＊${model}:${preset}`
     );
 }
-/* ==================================================
+/* =====================================================
    配置先
-================================================== */
+===================================================== */
 function insertPlacement() {
     const placement =
         document.getElementById("placement").value;
@@ -589,28 +799,29 @@ function insertPlacement() {
         return;
     }
     /*
-       改行を入れず、
-       カーソル位置に直接追加
+       改行なし
     */
     insertAtCursor(
         `@${placement}`
     );
 }
-/* ==================================================
-   ハイライト処理
-================================================== */
+/* =====================================================
+   HTMLエスケープ
+===================================================== */
+function escapeHTML(text) {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+/* =====================================================
+   ハイライト
+===================================================== */
 function highlightText(text) {
-    /*
-       HTMLとして解釈されないようにする
-    */
     let result =
         escapeHTML(text);
-    /*
-       一時的なトークンに置き換える。
-       先に各記法を保護しておくことで、
-       例えばモデル名の中に記号があっても
-       色が重複しにくくする。
-    */
     const tokens = [];
     function token(html) {
         const id =
@@ -619,7 +830,7 @@ function highlightText(text) {
         return id;
     }
     /*
-       p001〜p999
+       ページ
     */
     result =
         result.replace(
@@ -629,7 +840,7 @@ function highlightText(text) {
             )
         );
     /*
-       #上中下
+       上・中・下
     */
     result =
         result.replace(
@@ -639,7 +850,7 @@ function highlightText(text) {
             )
         );
     /*
-       #右左
+       右・左
     */
     result =
         result.replace(
@@ -649,8 +860,7 @@ function highlightText(text) {
             )
         );
     /*
-       ＊モデル名
-       コロンの直前までをモデル名とする。
+       モデル名
     */
     result =
         result.replace(
@@ -660,8 +870,7 @@ function highlightText(text) {
             )
         );
     /*
-       :プリセット名
-       @または改行までをプリセット名とする。
+       プリセット
     */
     result =
         result.replace(
@@ -671,7 +880,7 @@ function highlightText(text) {
             )
         );
     /*
-       @数字
+       配置先
     */
     result =
         result.replace(
@@ -681,7 +890,7 @@ function highlightText(text) {
             )
         );
     /*
-       トークンを元に戻す
+       トークンを復元
     */
     tokens.forEach(
         (html, index) => {
@@ -693,48 +902,45 @@ function highlightText(text) {
         }
     );
     /*
-       textareaと同じ位置関係にするため、
-       最後に改行を1つ追加
+       textareaと高さを合わせるための
+       最後の改行
     */
     if (text.endsWith("\n")) {
         result += "\n";
     }
     return result;
 }
-/*
+/* =====================================================
    ハイライト更新
-*/
+===================================================== */
 function updateHighlight() {
     highlight.innerHTML =
         highlightText(editor.value);
-    /*
-       textareaとハイライトの
-       スクロール位置を同期
-    */
+    syncScroll();
+}
+/* =====================================================
+   スクロール同期
+===================================================== */
+function syncScroll() {
     highlight.scrollTop =
         editor.scrollTop;
     highlight.scrollLeft =
         editor.scrollLeft;
 }
-/* ==================================================
-   入力時
-================================================== */
+/* =====================================================
+   入力・スクロール
+===================================================== */
 editor.addEventListener(
     "input",
     updateHighlight
 );
 editor.addEventListener(
     "scroll",
-    function() {
-        highlight.scrollTop =
-            editor.scrollTop;
-        highlight.scrollLeft =
-            editor.scrollLeft;
-    }
+    syncScroll
 );
-/* ==================================================
+/* =====================================================
    コピー
-================================================== */
+===================================================== */
 function copyText() {
     const text =
         editor.value;
@@ -747,18 +953,15 @@ function copyText() {
             alert("コピーしました。");
         })
         .catch(() => {
-            /*
-               古いブラウザ用
-            */
             editor.focus();
             editor.select();
             document.execCommand("copy");
             alert("コピーしました。");
         });
 }
-/* ==================================================
+/* =====================================================
    TXT保存
-================================================== */
+===================================================== */
 function saveTxt() {
     const text =
         editor.value;
@@ -768,9 +971,6 @@ function saveTxt() {
         );
         return;
     }
-    /*
-       UTF-8のTXTを作成
-    */
     const blob =
         new Blob(
             [text],
@@ -791,9 +991,9 @@ function saveTxt() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 }
-/* ==================================================
-   初期表示
-================================================== */
+/* =====================================================
+   初期化
+===================================================== */
 updateHighlight();
 </script>
 </body>
