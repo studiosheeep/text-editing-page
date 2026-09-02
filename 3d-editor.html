@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>ローポリ頂点融解エディタ</title>
+<style>
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+}
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #1e1e22;
+    color: #eee;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        sans-serif;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+}
+/* =====================================================
+   全体レイアウト
+===================================================== */
+.app {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+}
+/* =====================================================
+   ツールバー
+===================================================== */
+.toolbar {
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    background: rgba(30, 30, 34, 0.85);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #333;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 5;
+}
+.tool-button {
+    flex: 0 0 auto;
+    min-width: 72px;
+    height: 56px;
+    padding: 0 10px;
+    border: 1px solid #3a3a40;
+    border-radius: 10px;
+    background: #2a2a30;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 11px;
+    cursor: pointer;
+}
+.tool-button:active {
+    background: #3a3a44;
+}
+.tool-button:disabled {
+    opacity: 0.35;
+}
+.tool-icon {
+    font-size: 22px;
+    line-height: 1;
+}
+.tool-button.primary {
+    background: #4287f5;
+    border-color: #5a97ff;
+}
+.tool-button.danger {
+    background: #d94848;
+    border-color: #e56060;
+}
+/* =====================================================
+   キャンバス
+===================================================== */
+.canvas-container {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+    background: #23232a;
+}
+.canvas-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+/* =====================================================
+   情報パネル
+===================================================== */
+.info-panel {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    padding: 8px 12px;
+    background: rgba(30, 30, 34, 0.85);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    border: 1px solid #333;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+    pointer-events: none;
+    max-width: 60%;
+}
+.info-panel .info-label {
+    color: #999;
+    margin-right: 6px;
+}
+.info-panel .info-value {
+    color: #eee;
+}
+.info-panel .info-value.selected {
+    color: #ffb35c;
+}
+/* =====================================================
+   非表示のファイル入力
+===================================================== */
+#file-input {
+    display: none;
+}
+/* =====================================================
+   トースト
+===================================================== */
+.toast {
+    position: absolute;
+    left: 50%;
+    top: 20px;
+    transform: translateX(-50%);
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+    z-index: 20;
+}
+.toast.show {
+    opacity: 1;
+}
+/* =====================================================
+   ヘルプパネル
+===================================================== */
+.help-panel {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+    padding: 20px;
+}
+.help-panel.show {
+    display: flex;
+}
+.help-content {
+    background: #2a2a30;
+    border: 1px solid #444;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 420px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+    -webkit-user-select: text;
+    user-select: text;
+}
+.help-content h2 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+}
+.help-content h3 {
+    margin: 14px 0 6px 0;
+    font-size: 13px;
+    color: #ffb35c;
+}
+.help-content p,
+.help-content li {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #ccc;
+}
+.help-content ul {
+    padding-left: 20px;
+    margin: 4px 0;
+}
+.help-close {
+    display: block;
+    width: 100%;
+    margin-top: 14px;
+    padding: 10px;
+    background: #4287f5;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+/* =====================================================
+   エクスポートモーダル
+===================================================== */
+.export-textarea {
+    width: 100%;
+    height: 200px;
+    padding: 10px;
+    background: #1a1a1e;
+    color: #ddd;
+    border: 1px solid #444;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 12px;
+    -webkit-user-select: text;
+    user-select: text;
+    resize: vertical;
+}
+.export-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+.export-buttons button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+.export-buttons .btn-copy {
+    background: #4287f5;
+}
+.export-buttons .btn-download {
+    background: #3aa363;
+}
+.export-buttons .btn-close {
+    background: #555;
+}
+</style>
+</head>
+<body>
+<div class="app">
+<!-- =================================================
+     ツールバー
+================================================= -->
+<div class="toolbar">
+    <button class="tool-button" id="btn-load">
+        <span class="tool-icon">📂</span>
+        <span>読み込み</span>
+    </button>
+    <button class="tool-button" id="btn-sample">
+        <span class="tool-icon">🎲</span>
+        <span>サンプル</span>
+    </button>
+    <button class="tool-button" id="btn-undo" disabled>
+        <span class="tool-icon">↶</span>
+        <span>元に戻す</span>
+    </button>
+    <button class="tool-button" id="btn-deselect" disabled>
+        <span class="tool-icon">⊘</span>
+        <span>選択解除</span>
+    </button>
+    <button class="tool-button danger" id="btn-dissolve" disabled>
+        <span class="tool-icon">✕</span>
+        <span>融解</span>
+    </button>
+    <button class="tool-button" id="btn-view">
+        <span class="tool-icon">👁</span>
+        <span>表示</span>
+    </button>
+    <button class="tool-button primary" id="btn-export" disabled>
+        <span class="tool-icon">💾</span>
+        <span>保存</span>
+    </button>
+    <button class="tool-button" id="btn-help">
+        <span class="tool-icon">?</span>
+        <span>ヘルプ</span>
+    </button>
+</div>
+<!-- =================================================
+     キャンバス
+================================================= -->
+<div class="canvas-container" id="canvas-container">
+    <div class="info-panel" id="info-panel">
+        <div>
+            <span class="info-label">頂点</span>
+            <span class="info-value" id="info-vertex">0</span>
+            <span class="info-label" style="margin-left:10px">面</span>
+            <span class="info-value" id="info-face">0</span>
+        </div>
+        <div id="info-selected-row" style="display:none">
+            <span class="info-label">選択中</span>
+            <span class="info-value selected" id="info-selected">-</span>
+        </div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <div class="help-panel" id="help-panel">
+        <div class="help-content">
+            <h2>ローポリ頂点融解エディタ</h2>
+            <p>iPad の Safari から使えるシンプルな3Dモデル編集ツールです。OBJ / FBX 形式のローポリモデル (~300頂点以下) を読み込み、不要な頂点を Blender 風の「融解」で削除して OBJ に書き出せます。</p>
+            <h3>操作</h3>
+            <ul>
+                <li>1本指ドラッグ: 回転</li>
+                <li>2本指ドラッグ: 平行移動</li>
+                <li>ピンチ: ズーム</li>
+                <li>青い点をタップ: 頂点を選択</li>
+                <li>「融解」で選択頂点を削除し、周囲の面を再構成</li>
+            </ul>
+            <h3>読み込み・保存</h3>
+            <ul>
+                <li>「読み込み」から .obj または .fbx ファイルを選択</li>
+                <li>「保存」で編集結果を .obj でコピー/ダウンロード</li>
+                <li>「サンプル」で内蔵のテスト用モデルを表示</li>
+                <li>読み込み時に同一座標の頂点は自動で溶接されます</li>
+            </ul>
+            <h3>ヒント</h3>
+            <ul>
+                <li>頂点をタップしにくい場合はズームしてから</li>
+                <li>「元に戻す」は複数段階さかのぼれます</li>
+                <li>「表示」で頂点マーカーの表示/非表示を切替</li>
+            </ul>
+            <button class="help-close" id="help-close">閉じる</button>
+        </div>
+    </div>
+    <div class="help-panel" id="export-panel">
+        <div class="help-content">
+            <h2>OBJを保存</h2>
+            <p>コピーして任意のテキストエディタに貼り付け <code>.obj</code> として保存するか、下のボタンでダウンロードしてください。</p>
+            <textarea class="export-textarea" id="export-textarea" readonly></textarea>
+            <div class="export-buttons">
+                <button class="btn-copy" id="btn-copy-obj">コピー</button>
+                <button class="btn-download" id="btn-download-obj">ダウンロード</button>
+                <button class="btn-close" id="export-close">閉じる</button>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<input id="file-input" type="file" accept=".obj,.fbx,text/plain">
+<!-- =================================================
+     Three.js (ESM + import map)
+================================================= -->
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* =====================================================
+   要素参照
+===================================================== */
+const container = document.getElementById('canvas-container');
+const infoVertex = document.getElementById('info-vertex');
+const infoFace = document.getElementById('info-face');
+const infoSelectedRow = document.getElementById('info-selected-row');
+const infoSelected = document.getElementById('info-selected');
+const toast = document.getElementById('toast');
+const helpPanel = document.getElementById('help-panel');
+const fileInput = document.getElementById('file-input');
+const btnLoad = document.getElementById('btn-load');
+const btnSample = document.getElementById('btn-sample');
+const btnUndo = document.getElementById('btn-undo');
+const btnDeselect = document.getElementById('btn-deselect');
+const btnDissolve = document.getElementById('btn-dissolve');
+const btnView = document.getElementById('btn-view');
+const btnExport = document.getElementById('btn-export');
+const btnHelp = document.getElementById('btn-help');
+const helpClose = document.getElementById('help-close');
+
+/* =====================================================
+   Three.js 初期化
+===================================================== */
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(container.clientWidth, container.clientHeight);
+container.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x23232a);
+
+const camera = new THREE.PerspectiveCamera(
+    45,
+    container.clientWidth / container.clientHeight,
+    0.01,
+    1000
+);
+camera.position.set(3, 3, 3);
+camera.lookAt(0, 0, 0);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.1;
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+dirLight.position.set(3, 5, 2);
+scene.add(dirLight);
+const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.25);
+dirLight2.position.set(-2, -1, -3);
+scene.add(dirLight2);
+
+const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x333333);
+scene.add(gridHelper);
+
+/* =====================================================
+   モデル状態
+===================================================== */
+/*
+   meshData: {
+       vertices: [[x,y,z], ...],
+       faces:    [[i,j,k], ...]   (三角形のみ)
+   }
+*/
+let meshData = { vertices: [], faces: [] };
+let selectedVertex = -1;
+let showVertices = true;
+const history = [];
+const HISTORY_MAX = 30;
+
+let meshObject = null;
+let wireframeObject = null;
+let vertexHelpers = null;
+let selectedHelper = null;
+
+/* =====================================================
+   ユーティリティ
+===================================================== */
+function showToast(text, duration = 1600) {
+    toast.textContent = text;
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(
+        () => toast.classList.remove('show'),
+        duration
+    );
+}
+
+function cloneMeshData(data) {
+    return {
+        vertices: data.vertices.map(v => v.slice()),
+        faces: data.faces.map(f => f.slice())
+    };
+}
+
+function pushHistory() {
+    history.push(cloneMeshData(meshData));
+    if (history.length > HISTORY_MAX) history.shift();
+    updateButtons();
+}
+
+function updateButtons() {
+    const hasMesh = meshData.vertices.length > 0;
+    btnExport.disabled = !hasMesh;
+    btnUndo.disabled = history.length === 0;
+    btnDeselect.disabled = selectedVertex < 0;
+    btnDissolve.disabled = selectedVertex < 0;
+}
+
+function updateInfo() {
+    infoVertex.textContent = meshData.vertices.length;
+    infoFace.textContent = meshData.faces.length;
+    if (selectedVertex >= 0) {
+        infoSelectedRow.style.display = '';
+        const v = meshData.vertices[selectedVertex];
+        infoSelected.textContent =
+            `#${selectedVertex} (${v[0].toFixed(2)}, ${v[1].toFixed(2)}, ${v[2].toFixed(2)})`;
+    } else {
+        infoSelectedRow.style.display = 'none';
+    }
+}
+
+/* =====================================================
+   OBJ パース / エクスポート
+===================================================== */
+function parseOBJ(text) {
+    const vertices = [];
+    const faces = [];
+    const lines = text.split(/\r?\n/);
+    for (const raw of lines) {
+        const line = raw.trim();
+        if (!line || line.startsWith('#')) continue;
+        const parts = line.split(/\s+/);
+        const tag = parts[0];
+        if (tag === 'v' && parts.length >= 4) {
+            vertices.push([
+                Number(parts[1]),
+                Number(parts[2]),
+                Number(parts[3])
+            ]);
+        } else if (tag === 'f' && parts.length >= 4) {
+            const indices = parts
+                .slice(1)
+                .map(p => {
+                    const idx = parseInt(p.split('/')[0], 10);
+                    /* OBJ は 1-based / 負数は末尾からの相対 */
+                    if (idx > 0) return idx - 1;
+                    if (idx < 0) return vertices.length + idx;
+                    return -1;
+                })
+                .filter(i => i >= 0);
+            /* n-gon はファン三角形化 */
+            for (let i = 1; i < indices.length - 1; i++) {
+                faces.push([indices[0], indices[i], indices[i + 1]]);
+            }
+        }
+    }
+    return { vertices, faces };
+}
+
+/* =====================================================
+   FBX 読み込み (Three.js FBXLoader を動的import)
+===================================================== */
+let _fbxLoaderPromise = null;
+async function loadFBXLoader() {
+    if (!_fbxLoaderPromise) {
+        _fbxLoaderPromise = import(
+            'three/addons/loaders/FBXLoader.js'
+        ).then(m => m.FBXLoader);
+    }
+    return _fbxLoaderPromise;
+}
+
+async function parseFBX(arrayBuffer) {
+    const FBXLoader = await loadFBXLoader();
+    const loader = new FBXLoader();
+    const group = loader.parse(arrayBuffer, '');
+    group.updateMatrixWorld(true);
+
+    const vertices = [];
+    const faces = [];
+    const v = new THREE.Vector3();
+    group.traverse(obj => {
+        if (!obj.isMesh || !obj.geometry) return;
+        const geo = obj.geometry;
+        const posAttr = geo.getAttribute('position');
+        if (!posAttr) return;
+        const index = geo.index;
+        const baseIdx = vertices.length;
+        const m = obj.matrixWorld;
+        for (let i = 0; i < posAttr.count; i++) {
+            v.fromBufferAttribute(posAttr, i).applyMatrix4(m);
+            vertices.push([v.x, v.y, v.z]);
+        }
+        if (index) {
+            for (let i = 0; i < index.count; i += 3) {
+                faces.push([
+                    baseIdx + index.getX(i),
+                    baseIdx + index.getX(i + 1),
+                    baseIdx + index.getX(i + 2)
+                ]);
+            }
+        } else {
+            for (let i = 0; i < posAttr.count; i += 3) {
+                faces.push([baseIdx + i, baseIdx + i + 1, baseIdx + i + 2]);
+            }
+        }
+    });
+    return { vertices, faces };
+}
+
+/* =====================================================
+   頂点溶接 (同一座標をマージ)
+===================================================== */
+function weldVertices(data, epsilon = 1e-4) {
+    const scale = 1 / epsilon;
+    const key = v =>
+        Math.round(v[0] * scale) + ',' +
+        Math.round(v[1] * scale) + ',' +
+        Math.round(v[2] * scale);
+    const map = new Map();
+    const newVerts = [];
+    const remap = new Array(data.vertices.length);
+    for (let i = 0; i < data.vertices.length; i++) {
+        const k = key(data.vertices[i]);
+        let idx = map.get(k);
+        if (idx === undefined) {
+            idx = newVerts.length;
+            map.set(k, idx);
+            newVerts.push(data.vertices[i].slice());
+        }
+        remap[i] = idx;
+    }
+    const newFaces = [];
+    for (const f of data.faces) {
+        const a = remap[f[0]];
+        const b = remap[f[1]];
+        const c = remap[f[2]];
+        if (a !== b && b !== c && a !== c) newFaces.push([a, b, c]);
+    }
+    return { vertices: newVerts, faces: newFaces };
+}
+
+function exportOBJ(data) {
+    let text = '# exported by low-poly dissolve editor\n';
+    for (const v of data.vertices) {
+        text += `v ${v[0]} ${v[1]} ${v[2]}\n`;
+    }
+    for (const f of data.faces) {
+        text += `f ${f[0] + 1} ${f[1] + 1} ${f[2] + 1}\n`;
+    }
+    return text;
+}
+
+/* =====================================================
+   モデル正規化 (カメラフィット)
+===================================================== */
+function fitCameraToMesh() {
+    if (meshData.vertices.length === 0) return;
+    const box = new THREE.Box3();
+    for (const v of meshData.vertices) {
+        box.expandByPoint(new THREE.Vector3(v[0], v[1], v[2]));
+    }
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const fitDist = maxDim / (2 * Math.tan((Math.PI * camera.fov) / 360));
+    const dir = new THREE.Vector3(1, 0.8, 1).normalize();
+    camera.position.copy(center).add(dir.multiplyScalar(fitDist * 1.6));
+    controls.target.copy(center);
+    camera.near = Math.max(fitDist / 100, 0.001);
+    camera.far = fitDist * 100;
+    camera.updateProjectionMatrix();
+    controls.update();
+}
+
+/* =====================================================
+   シーン再構築
+===================================================== */
+function disposeObject(obj) {
+    if (!obj) return;
+    scene.remove(obj);
+    if (obj.geometry) obj.geometry.dispose();
+    if (obj.material) {
+        if (Array.isArray(obj.material)) {
+            obj.material.forEach(m => m.dispose());
+        } else {
+            obj.material.dispose();
+        }
+    }
+}
+
+function rebuildScene() {
+    disposeObject(meshObject);
+    disposeObject(wireframeObject);
+    disposeObject(vertexHelpers);
+    disposeObject(selectedHelper);
+    meshObject = null;
+    wireframeObject = null;
+    vertexHelpers = null;
+    selectedHelper = null;
+
+    if (meshData.vertices.length === 0) {
+        updateInfo();
+        updateButtons();
+        return;
+    }
+
+    /* 面メッシュ */
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(meshData.faces.length * 9);
+    for (let i = 0; i < meshData.faces.length; i++) {
+        const f = meshData.faces[i];
+        for (let j = 0; j < 3; j++) {
+            const v = meshData.vertices[f[j]];
+            positions[i * 9 + j * 3 + 0] = v[0];
+            positions[i * 9 + j * 3 + 1] = v[1];
+            positions[i * 9 + j * 3 + 2] = v[2];
+        }
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geo.computeVertexNormals();
+    const mat = new THREE.MeshStandardMaterial({
+        color: 0xc8ccd4,
+        flatShading: true,
+        side: THREE.DoubleSide,
+        roughness: 0.7,
+        metalness: 0.05
+    });
+    meshObject = new THREE.Mesh(geo, mat);
+    scene.add(meshObject);
+
+    /* ワイヤーフレーム */
+    const wireGeo = new THREE.EdgesGeometry(geo, 1);
+    wireframeObject = new THREE.LineSegments(
+        wireGeo,
+        new THREE.LineBasicMaterial({ color: 0x222222 })
+    );
+    scene.add(wireframeObject);
+
+    /* 頂点マーカー */
+    if (showVertices) {
+        buildVertexHelpers();
+    }
+
+    updateInfo();
+    updateButtons();
+}
+
+function computeVertexRadius() {
+    if (meshData.vertices.length === 0) return 0.01;
+    const box = new THREE.Box3();
+    for (const v of meshData.vertices) {
+        box.expandByPoint(new THREE.Vector3(v[0], v[1], v[2]));
+    }
+    const size = box.getSize(new THREE.Vector3()).length();
+    return Math.max(size * 0.006, 0.005);
+}
+
+function buildVertexHelpers() {
+    const count = meshData.vertices.length;
+    if (count === 0) return;
+    const radius = computeVertexRadius();
+    const sphereGeo = new THREE.SphereGeometry(radius, 8, 6);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x4287f5 });
+    vertexHelpers = new THREE.InstancedMesh(sphereGeo, mat, count);
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < count; i++) {
+        const v = meshData.vertices[i];
+        dummy.position.set(v[0], v[1], v[2]);
+        dummy.updateMatrix();
+        vertexHelpers.setMatrixAt(i, dummy.matrix);
+    }
+    vertexHelpers.instanceMatrix.needsUpdate = true;
+    scene.add(vertexHelpers);
+
+    /* 選択マーカー */
+    if (selectedVertex >= 0 && selectedVertex < count) {
+        const selGeo = new THREE.SphereGeometry(radius * 2.2, 12, 8);
+        const selMat = new THREE.MeshBasicMaterial({ color: 0xffb35c });
+        selectedHelper = new THREE.Mesh(selGeo, selMat);
+        const v = meshData.vertices[selectedVertex];
+        selectedHelper.position.set(v[0], v[1], v[2]);
+        scene.add(selectedHelper);
+    }
+}
+
+/* =====================================================
+   頂点選択 (画面ピクセル距離で最近傍)
+===================================================== */
+function findNearestVertex(clientX, clientY, thresholdPx = 30) {
+    if (meshData.vertices.length === 0) return -1;
+    const rect = renderer.domElement.getBoundingClientRect();
+    const px = clientX - rect.left;
+    const py = clientY - rect.top;
+    const width = rect.width;
+    const height = rect.height;
+    let best = -1;
+    let bestDist = thresholdPx;
+    const proj = new THREE.Vector3();
+    for (let i = 0; i < meshData.vertices.length; i++) {
+        const v = meshData.vertices[i];
+        proj.set(v[0], v[1], v[2]);
+        proj.project(camera);
+        /* カメラ後方はスキップ */
+        if (proj.z < -1 || proj.z > 1) continue;
+        const sx = (proj.x + 1) * 0.5 * width;
+        const sy = (1 - proj.y) * 0.5 * height;
+        const d = Math.hypot(sx - px, sy - py);
+        if (d < bestDist) {
+            bestDist = d;
+            best = i;
+        }
+    }
+    return best;
+}
+
+function setSelected(idx) {
+    selectedVertex = idx;
+    /* 選択マーカーだけ差し替え */
+    disposeObject(selectedHelper);
+    selectedHelper = null;
+    if (idx >= 0 && meshData.vertices[idx]) {
+        const radius = computeVertexRadius();
+        const selGeo = new THREE.SphereGeometry(radius * 2.2, 12, 8);
+        const selMat = new THREE.MeshBasicMaterial({ color: 0xffb35c });
+        selectedHelper = new THREE.Mesh(selGeo, selMat);
+        const v = meshData.vertices[idx];
+        selectedHelper.position.set(v[0], v[1], v[2]);
+        scene.add(selectedHelper);
+    }
+    updateInfo();
+    updateButtons();
+}
+
+/* =====================================================
+   Blender 風 頂点融解
+   1. 選択頂点を含む三角形を集める
+   2. 各三角形の "選択頂点を含まない辺" を境界辺として取り出す
+   3. 面のワインディングに沿ってループ化
+   4. 元の面を削除しループを再三角形化 (ファン)
+   5. 頂点を削除しインデックスを詰める
+===================================================== */
+function dissolveVertex(vIdx) {
+    const incident = [];
+    const others = [];
+    for (let i = 0; i < meshData.faces.length; i++) {
+        const f = meshData.faces[i];
+        if (f[0] === vIdx || f[1] === vIdx || f[2] === vIdx) {
+            incident.push(f);
+        } else {
+            others.push(f);
+        }
+    }
+    if (incident.length === 0) {
+        showToast('この頂点はどの面にも属していません');
+        return false;
+    }
+
+    /* 境界辺 (向き付き) を収集 */
+    const boundaryEdges = [];
+    for (const f of incident) {
+        const [a, b, c] = f;
+        /*
+           三角形 (a,b,c) のワインディングを維持したまま
+           v を除いた辺を取り出す
+        */
+        if (a === vIdx) boundaryEdges.push([b, c]);
+        else if (b === vIdx) boundaryEdges.push([c, a]);
+        else boundaryEdges.push([a, b]);
+    }
+
+    /* ループ化: next[start] = end で辿る */
+    const next = new Map();
+    for (const [s, e] of boundaryEdges) {
+        if (next.has(s)) {
+            /* 非マニフォールド (同じ頂点から2辺以上) */
+            showToast('この頂点は非マニフォールドで融解できません');
+            return false;
+        }
+        next.set(s, e);
+    }
+    const start = boundaryEdges[0][0];
+    const loop = [start];
+    let cur = next.get(start);
+    let safety = boundaryEdges.length + 1;
+    while (cur !== undefined && cur !== start && safety-- > 0) {
+        loop.push(cur);
+        cur = next.get(cur);
+    }
+    if (cur !== start) {
+        /* 境界頂点 (穴付き) は融解しない */
+        showToast('境界上の頂点は融解できません');
+        return false;
+    }
+    if (loop.length < 3) {
+        showToast('周囲の面が不足しています');
+        return false;
+    }
+
+    /* 新しい三角形 (ファン化) */
+    const newFaces = others.slice();
+    for (let i = 1; i < loop.length - 1; i++) {
+        newFaces.push([loop[0], loop[i], loop[i + 1]]);
+    }
+
+    /* 頂点を削除しインデックスをリマップ */
+    const newVertices = [];
+    for (let i = 0; i < meshData.vertices.length; i++) {
+        if (i !== vIdx) newVertices.push(meshData.vertices[i].slice());
+    }
+    const remap = i => (i > vIdx ? i - 1 : i);
+    const remapped = newFaces.map(f => [remap(f[0]), remap(f[1]), remap(f[2])]);
+
+    /* 縮退した面 (同じ頂点を含む) は捨てる */
+    const cleaned = remapped.filter(
+        f => f[0] !== f[1] && f[1] !== f[2] && f[0] !== f[2]
+    );
+
+    meshData.vertices = newVertices;
+    meshData.faces = cleaned;
+    return true;
+}
+
+/* =====================================================
+   サンプルモデル (八面体を細分化したような形)
+===================================================== */
+function loadSample() {
+    /* 20面体 (Icosahedron) */
+    const t = (1 + Math.sqrt(5)) / 2;
+    const raw = [
+        [-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
+        [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
+        [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1]
+    ];
+    const norm = raw.map(v => {
+        const l = Math.hypot(v[0], v[1], v[2]);
+        return [v[0] / l, v[1] / l, v[2] / l];
+    });
+    const faces = [
+        [0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+        [1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+        [3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+        [4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1]
+    ];
+    meshData = { vertices: norm, faces };
+    history.length = 0;
+    setSelected(-1);
+    rebuildScene();
+    fitCameraToMesh();
+    showToast('サンプルモデルを読み込みました');
+}
+
+/* =====================================================
+   ファイル入出力
+===================================================== */
+btnLoad.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    try {
+        let parsed;
+        if (name.endsWith('.fbx')) {
+            showToast('FBXを読み込み中...', 3000);
+            const buf = await file.arrayBuffer();
+            parsed = await parseFBX(buf);
+            parsed = weldVertices(parsed);
+        } else {
+            const text = await file.text();
+            parsed = parseOBJ(text);
+            parsed = weldVertices(parsed);
+        }
+        if (parsed.vertices.length === 0 || parsed.faces.length === 0) {
+            showToast('解析に失敗しました (面が見つかりません)');
+            return;
+        }
+        meshData = parsed;
+        history.length = 0;
+        setSelected(-1);
+        rebuildScene();
+        fitCameraToMesh();
+        showToast(
+            `${file.name} を読み込みました ` +
+            `(${meshData.vertices.length}頂点/${meshData.faces.length}面)`
+        );
+    } catch (e) {
+        showToast('読み込みエラー: ' + (e && e.message || 'error'));
+    }
+    fileInput.value = '';
+});
+
+const exportPanel = document.getElementById('export-panel');
+const exportTextarea = document.getElementById('export-textarea');
+const btnCopyObj = document.getElementById('btn-copy-obj');
+const btnDownloadObj = document.getElementById('btn-download-obj');
+const exportClose = document.getElementById('export-close');
+
+btnExport.addEventListener('click', () => {
+    if (meshData.vertices.length === 0) return;
+    exportTextarea.value = exportOBJ(meshData);
+    exportPanel.classList.add('show');
+});
+
+exportClose.addEventListener('click', () => exportPanel.classList.remove('show'));
+exportPanel.addEventListener('click', e => {
+    if (e.target === exportPanel) exportPanel.classList.remove('show');
+});
+
+btnCopyObj.addEventListener('click', async () => {
+    const text = exportTextarea.value;
+    try {
+        await navigator.clipboard.writeText(text);
+        showToast('コピーしました');
+    } catch (e) {
+        exportTextarea.select();
+        document.execCommand('copy');
+        showToast('コピーしました');
+    }
+});
+
+btnDownloadObj.addEventListener('click', () => {
+    const text = exportTextarea.value;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'edited.obj';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('保存しました');
+});
+
+/* =====================================================
+   タップ判定 (OrbitControls と共存)
+===================================================== */
+let downTime = 0;
+let downX = 0;
+let downY = 0;
+let downValid = false;
+
+renderer.domElement.addEventListener('pointerdown', e => {
+    if (!e.isPrimary) {
+        downValid = false;
+        return;
+    }
+    downTime = performance.now();
+    downX = e.clientX;
+    downY = e.clientY;
+    downValid = true;
+});
+
+renderer.domElement.addEventListener('pointerup', e => {
+    if (!downValid || !e.isPrimary) return;
+    downValid = false;
+    const dt = performance.now() - downTime;
+    const dist = Math.hypot(e.clientX - downX, e.clientY - downY);
+    if (dt < 300 && dist < 8) {
+        const idx = findNearestVertex(e.clientX, e.clientY, 30);
+        if (idx >= 0) {
+            setSelected(idx);
+        } else if (selectedVertex >= 0) {
+            setSelected(-1);
+        }
+    }
+});
+
+renderer.domElement.addEventListener('pointercancel', () => {
+    downValid = false;
+});
+
+/* =====================================================
+   ボタン挙動
+===================================================== */
+btnSample.addEventListener('click', loadSample);
+
+btnUndo.addEventListener('click', () => {
+    if (history.length === 0) return;
+    meshData = history.pop();
+    setSelected(-1);
+    rebuildScene();
+    showToast('元に戻しました');
+});
+
+btnDeselect.addEventListener('click', () => setSelected(-1));
+
+btnDissolve.addEventListener('click', () => {
+    if (selectedVertex < 0) return;
+    const snapshot = cloneMeshData(meshData);
+    const ok = dissolveVertex(selectedVertex);
+    if (ok) {
+        history.push(snapshot);
+        if (history.length > HISTORY_MAX) history.shift();
+        setSelected(-1);
+        rebuildScene();
+        showToast('頂点を融解しました');
+    }
+});
+
+btnView.addEventListener('click', () => {
+    showVertices = !showVertices;
+    rebuildScene();
+    showToast(showVertices ? '頂点を表示' : '頂点を非表示');
+});
+
+btnHelp.addEventListener('click', () => helpPanel.classList.add('show'));
+helpClose.addEventListener('click', () => helpPanel.classList.remove('show'));
+helpPanel.addEventListener('click', e => {
+    if (e.target === helpPanel) helpPanel.classList.remove('show');
+});
+
+/* =====================================================
+   リサイズ
+===================================================== */
+function onResize() {
+    const w = container.clientWidth;
+    const h = container.clientHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', onResize);
+window.addEventListener('orientationchange', () => setTimeout(onResize, 300));
+
+/* =====================================================
+   描画ループ
+===================================================== */
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+animate();
+
+/* =====================================================
+   起動時
+===================================================== */
+loadSample();
+updateInfo();
+updateButtons();
+</script>
+</body>
+</html>
