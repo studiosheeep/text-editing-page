@@ -35,9 +35,11 @@ body {
     width: 100%;
     max-width: 900px;
     margin: 0 auto;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 /* =====================================================
    ヘッダー
@@ -197,7 +199,10 @@ input:focus {
 ===================================================== */
 .editor-area {
     flex: 1;
+    min-height: 0;
     padding: 12px;
+    display: flex;
+    flex-direction: column;
 }
 /*
    エディタ本体
@@ -205,9 +210,8 @@ input:focus {
 .editor-wrapper {
     position: relative;
     width: 100%;
-    min-height: 60vh;
-    height: calc(100vh - 180px);
-    max-height: 900px;
+    flex: 1;
+    min-height: 0;
     border: 1px solid #ccc;
     border-radius: 9px;
     background: white;
@@ -342,10 +346,6 @@ input:focus {
     }
     .editor-area {
         padding: 8px;
-    }
-    .editor-wrapper {
-        height: calc(100vh - 170px);
-        min-height: 500px;
     }
 }
 </style>
