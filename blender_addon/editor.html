@@ -259,6 +259,9 @@ body {
 .export-buttons .btn-close {
     background: #555;
 }
+.export-buttons .btn-share {
+    background: #7c5ec7;
+}
 /* =====================================================
    メッシュ選択ボタン (ピッカー内)
 ===================================================== */
@@ -404,6 +407,9 @@ body {
             <div class="export-buttons">
                 <button class="btn-copy" id="btn-copy-obj">コピー</button>
                 <button class="btn-download" id="btn-download-obj">ダウンロード</button>
+            </div>
+            <div class="export-buttons" style="margin-top:8px">
+                <button class="btn-share" id="btn-share-url">GitHubで開く (URL共有)</button>
                 <button class="btn-close" id="export-close">閉じる</button>
             </div>
         </div>
@@ -1311,6 +1317,120 @@ document.getElementById('btn-bridge-send').addEventListener('click', async () =>
 });
 
 detectBridge();
+
+/* =====================================================
+   URLハッシュ経由でメッシュを持ち出す
+   - LAN URLタブ (Blenderブリッジ経由) で作業した内容を、
+     GitHub Pages 版タブに1タップで受け渡すため
+   - deflate-raw で圧縮 → Base64URL でハッシュ化
+   - Safari 16.4+ の CompressionStream/DecompressionStream 前提
+     (非対応環境では非圧縮base64にフォールバック)
+===================================================== */
+const SHARE_TARGET_URL =
+    'https://studiosheeep.github.io/text-editing-page/3d-editor.html';
+
+function _base64UrlEncode(bytes) {
+    let bin = '';
+    for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin)
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '');
+}
+
+function _base64UrlDecode(str) {
+    const pad = '='.repeat((4 - str.length % 4) % 4);
+    const bin = atob(str.replace(/-/g, '+').replace(/_/g, '/') + pad);
+    return Uint8Array.from(bin, c => c.charCodeAt(0));
+}
+
+async function encodeMeshForUrl(objText) {
+    if (typeof CompressionStream !== 'undefined') {
+        const stream = new Blob([objText]).stream()
+            .pipeThrough(new CompressionStream('deflate-raw'));
+        const bytes = new Uint8Array(
+            await new Response(stream).arrayBuffer()
+        );
+        return 'meshz=' + _base64UrlEncode(bytes);
+    }
+    /* フォールバック: 非圧縮 (URLが長くなる) */
+    const bytes = new TextEncoder().encode(objText);
+    return 'mesh=' + _base64UrlEncode(bytes);
+}
+
+async function decodeMeshFromUrl(hash) {
+    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    if (params.has('meshz')) {
+        const bytes = _base64UrlDecode(params.get('meshz'));
+        const stream = new Blob([bytes]).stream()
+            .pipeThrough(new DecompressionStream('deflate-raw'));
+        return await new Response(stream).text();
+    }
+    if (params.has('mesh')) {
+        const bytes = _base64UrlDecode(params.get('mesh'));
+        return new TextDecoder().decode(bytes);
+    }
+    return null;
+}
+
+document.getElementById('btn-share-url').addEventListener('click', async () => {
+    if (meshData.vertices.length === 0) return;
+    try {
+        const text = exportOBJ(meshData);
+        const encoded = await encodeMeshForUrl(text);
+        const url = SHARE_TARGET_URL + '#' + encoded;
+        if (url.length > 60000) {
+            showToast('メッシュが大きすぎてURLに収まりません');
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(url);
+        } catch (e) { /* clipboard未許可: 無視 */ }
+        showToast(
+            `URLをコピー & 新規タブを開きます (${Math.round(url.length / 1024)}KB)`,
+            3000
+        );
+        window.open(url, '_blank', 'noopener');
+    } catch (e) {
+        showToast('URL生成失敗: ' + (e && e.message || 'error'));
+    }
+});
+
+/* 起動時: URLハッシュにメッシュがあれば読み込む */
+async function checkMeshHash() {
+    if (!window.location.hash) return;
+    let text;
+    try {
+        text = await decodeMeshFromUrl(window.location.hash);
+    } catch (e) {
+        showToast('URL内のメッシュを読めませんでした');
+        return;
+    }
+    if (!text) return;
+    let parsed = parseOBJ(text);
+    parsed = weldVertices(parsed);
+    if (parsed.vertices.length === 0 || parsed.faces.length === 0) {
+        showToast('URL内のメッシュが空でした');
+        return;
+    }
+    meshData = parsed;
+    history.length = 0;
+    setSelected(-1);
+    rebuildScene();
+    fitCameraToMesh();
+    showToast(
+        `URLから読み込みました ` +
+        `(${parsed.vertices.length}頂点/${parsed.faces.length}面)`
+    );
+    /* ハッシュを消してリロード時に二重読込しないようにする */
+    try {
+        window.history.replaceState(
+            null, '',
+            window.location.pathname + window.location.search
+        );
+    } catch (e) { /* 一部環境で失敗しても致命ではない */ }
+}
+checkMeshHash();
 </script>
 </body>
 </html>
