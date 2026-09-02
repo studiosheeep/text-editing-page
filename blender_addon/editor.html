@@ -325,6 +325,10 @@ body {
         <span class="tool-icon">✕</span>
         <span>融解</span>
     </button>
+    <button class="tool-button danger" id="btn-halve" disabled>
+        <span class="tool-icon">½</span>
+        <span>半減</span>
+    </button>
     <button class="tool-button" id="btn-view">
         <span class="tool-icon">👁</span>
         <span>表示</span>
@@ -540,6 +544,8 @@ function updateButtons() {
     btnUndo.disabled = history.length === 0;
     btnDeselect.disabled = selectedVertex < 0;
     btnDissolve.disabled = selectedVertex < 0;
+    const btnHalve = document.getElementById('btn-halve');
+    if (btnHalve) btnHalve.disabled = meshData.vertices.length < 8;
     const btnBridgeSend = document.getElementById('btn-bridge-send');
     if (btnBridgeSend) btnBridgeSend.disabled = !hasMesh;
 }
@@ -878,7 +884,8 @@ function setSelected(idx) {
    4. 元の面を削除しループを再三角形化 (ファン)
    5. 頂点を削除しインデックスを詰める
 ===================================================== */
-function dissolveVertex(vIdx) {
+function dissolveVertex(vIdx, silent = false) {
+    const notify = msg => { if (!silent) showToast(msg); };
     const incident = [];
     const others = [];
     for (let i = 0; i < meshData.faces.length; i++) {
@@ -890,7 +897,7 @@ function dissolveVertex(vIdx) {
         }
     }
     if (incident.length === 0) {
-        showToast('この頂点はどの面にも属していません');
+        notify('この頂点はどの面にも属していません');
         return false;
     }
 
@@ -912,7 +919,7 @@ function dissolveVertex(vIdx) {
     for (const [s, e] of boundaryEdges) {
         if (next.has(s)) {
             /* 非マニフォールド (同じ頂点から2辺以上) */
-            showToast('この頂点は非マニフォールドで融解できません');
+            notify('この頂点は非マニフォールドで融解できません');
             return false;
         }
         next.set(s, e);
@@ -927,11 +934,11 @@ function dissolveVertex(vIdx) {
     }
     if (cur !== start) {
         /* 境界頂点 (穴付き) は融解しない */
-        showToast('境界上の頂点は融解できません');
+        notify('境界上の頂点は融解できません');
         return false;
     }
     if (loop.length < 3) {
-        showToast('周囲の面が不足しています');
+        notify('周囲の面が不足しています');
         return false;
     }
 
@@ -957,6 +964,100 @@ function dissolveVertex(vIdx) {
     meshData.vertices = newVertices;
     meshData.faces = cleaned;
     return true;
+}
+
+/* =====================================================
+   自動半減 (flat な頂点から順に融解して頂点数を約半分に)
+   - 各頂点の「保持コスト」を隣接面法線の揃い具合で評価
+     平ら (全法線が揃う) ほど低コスト = 削っても形が崩れない
+   - コスト昇順で融解、失敗した頂点はスキップ
+   - 目標: 元の頂点数の半分 (最小4)
+===================================================== */
+function _computeVertexCosts() {
+    const V = meshData.vertices;
+    const F = meshData.faces;
+    /* 面法線 */
+    const normals = new Array(F.length);
+    for (let i = 0; i < F.length; i++) {
+        const [ia, ib, ic] = F[i];
+        const a = V[ia], b = V[ib], c = V[ic];
+        const abx = b[0]-a[0], aby = b[1]-a[1], abz = b[2]-a[2];
+        const acx = c[0]-a[0], acy = c[1]-a[1], acz = c[2]-a[2];
+        let nx = aby*acz - abz*acy;
+        let ny = abz*acx - abx*acz;
+        let nz = abx*acy - aby*acx;
+        const len = Math.hypot(nx, ny, nz) || 1;
+        normals[i] = [nx/len, ny/len, nz/len];
+    }
+    /* 頂点→隣接面 */
+    const vFaces = V.map(() => []);
+    for (let i = 0; i < F.length; i++) {
+        vFaces[F[i][0]].push(i);
+        vFaces[F[i][1]].push(i);
+        vFaces[F[i][2]].push(i);
+    }
+    /*
+       コスト = 隣接面数 - |法線合計|
+       全法線が揃う: cost ≈ 0 (平ら)
+       ばらばら     : cost が大きい (角・エッジ)
+    */
+    return V.map((_, vi) => {
+        const faces = vFaces[vi];
+        if (faces.length === 0) return Infinity;
+        let sx = 0, sy = 0, sz = 0;
+        for (const fi of faces) {
+            sx += normals[fi][0];
+            sy += normals[fi][1];
+            sz += normals[fi][2];
+        }
+        const sumLen = Math.hypot(sx, sy, sz);
+        return faces.length - sumLen;
+    });
+}
+
+function decimateHalf() {
+    const initial = meshData.vertices.length;
+    if (initial < 8) return { initial, target: initial, actual: initial };
+    const target = Math.max(4, Math.floor(initial / 2));
+    let stuck = 0;
+    const skipped = new Set(); /* 融解不可 (境界など) */
+
+    while (meshData.vertices.length > target) {
+        const costs = _computeVertexCosts();
+        /* skipped は元インデックスで持っているので、
+           融解ごとにインデックスが変わることを考慮できない。
+           そのため単純化: skipped は各パス冒頭でクリア。
+           (パスごとに座標変化するので再挑戦してもよい) */
+        if (stuck === 0) skipped.clear();
+
+        const ordered = costs
+            .map((c, i) => ({ c, i }))
+            .filter(o => !skipped.has(o.i) && Number.isFinite(o.c))
+            .sort((a, b) => a.c - b.c);
+
+        let progress = false;
+        for (const { i } of ordered) {
+            if (meshData.vertices.length <= target) break;
+            if (dissolveVertex(i, true)) {
+                progress = true;
+                /* インデックス変わるので次のパスへ */
+                break;
+            } else {
+                skipped.add(i);
+            }
+        }
+        if (!progress) {
+            stuck++;
+            if (stuck >= 2) break; /* 融解可能な頂点が尽きた */
+        } else {
+            stuck = 0;
+        }
+    }
+    return {
+        initial,
+        target,
+        actual: meshData.vertices.length
+    };
 }
 
 /* =====================================================
@@ -1135,6 +1236,32 @@ btnDissolve.addEventListener('click', () => {
         rebuildScene();
         showToast('頂点を融解しました');
     }
+});
+
+document.getElementById('btn-halve').addEventListener('click', () => {
+    if (meshData.vertices.length < 8) return;
+    const snapshot = cloneMeshData(meshData);
+    showToast('半減中...', 3000);
+    /*
+       描画を1フレーム走らせてトーストを見せてから重い計算に入る
+    */
+    requestAnimationFrame(() => {
+        const t0 = performance.now();
+        const stat = decimateHalf();
+        const dt = Math.round(performance.now() - t0);
+        if (stat.actual === stat.initial) {
+            showToast('融解できる頂点がありませんでした');
+            return;
+        }
+        history.push(snapshot);
+        if (history.length > HISTORY_MAX) history.shift();
+        setSelected(-1);
+        rebuildScene();
+        showToast(
+            `半減: ${stat.initial}→${stat.actual}頂点 (${dt}ms)`,
+            2500
+        );
+    });
 });
 
 btnView.addEventListener('click', () => {
