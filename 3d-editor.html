@@ -263,6 +263,98 @@ body {
     background: #7c5ec7;
 }
 /* =====================================================
+   ナビゲーションパネル (右上)
+===================================================== */
+.nav-panel {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: rgba(30, 30, 34, 0.85);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 8px;
+    z-index: 6;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.nav-row {
+    display: flex;
+    gap: 4px;
+}
+.nav-btn {
+    flex: 1;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 6px;
+    background: #2a2a30;
+    border: 1px solid #3a3a40;
+    border-radius: 6px;
+    color: #eee;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.nav-btn:active { background: #3a3a44; }
+.nav-btn.wide {
+    flex: 2;
+    font-weight: bold;
+}
+.nav-btn.on {
+    background: #4287f5;
+    border-color: #5a97ff;
+}
+.nav-divider {
+    height: 1px;
+    background: #444;
+    margin: 2px 0;
+}
+/* =====================================================
+   分割モーダル用ボタン
+===================================================== */
+.split-row {
+    display: flex;
+    gap: 6px;
+    margin: 6px 0;
+}
+.split-row .split-btn {
+    flex: 1;
+    height: 44px;
+    background: #3a3a44;
+    border: 1px solid #555;
+    border-radius: 8px;
+    color: #eee;
+    font-size: 14px;
+    cursor: pointer;
+}
+.split-row .split-btn.selected {
+    background: #4287f5;
+    border-color: #5a97ff;
+}
+.split-label {
+    font-size: 12px;
+    color: #aaa;
+    margin: 6px 0 2px 0;
+}
+.split-apply {
+    width: 100%;
+    height: 44px;
+    margin-top: 10px;
+    background: #d94848;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    cursor: pointer;
+}
+/* =====================================================
    メッシュ選択ボタン (ピッカー内)
 ===================================================== */
 .mesh-item {
@@ -329,6 +421,10 @@ body {
         <span class="tool-icon">½</span>
         <span>半減</span>
     </button>
+    <button class="tool-button" id="btn-split" disabled>
+        <span class="tool-icon">⊟</span>
+        <span>分割</span>
+    </button>
     <button class="tool-button" id="btn-view">
         <span class="tool-icon">👁</span>
         <span>表示</span>
@@ -354,6 +450,35 @@ body {
      キャンバス
 ================================================= -->
 <div class="canvas-container" id="canvas-container">
+    <div class="nav-panel" id="nav-panel">
+        <div class="nav-row">
+            <button class="nav-btn wide" id="nav-proj">透視</button>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="nav-row">
+            <button class="nav-btn" id="nav-view-top" title="上">上</button>
+            <button class="nav-btn" id="nav-view-front" title="前">前</button>
+            <button class="nav-btn" id="nav-view-right" title="右">右</button>
+        </div>
+        <div class="nav-row">
+            <button class="nav-btn" id="nav-view-bottom" title="下">下</button>
+            <button class="nav-btn" id="nav-view-back" title="後">後</button>
+            <button class="nav-btn" id="nav-view-left" title="左">左</button>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="nav-row">
+            <button class="nav-btn" id="nav-yaw-l" title="45°左回転">◀45</button>
+            <button class="nav-btn" id="nav-yaw-r" title="45°右回転">45▶</button>
+        </div>
+        <div class="nav-row">
+            <button class="nav-btn" id="nav-pitch-u" title="45°上">▲45</button>
+            <button class="nav-btn" id="nav-pitch-d" title="45°下">45▼</button>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="nav-row">
+            <button class="nav-btn wide" id="nav-fit">全体表示</button>
+        </div>
+    </div>
     <div class="info-panel" id="info-panel">
         <div>
             <span class="info-label">頂点</span>
@@ -393,6 +518,25 @@ body {
                 <li>「表示」で頂点マーカーの表示/非表示を切替</li>
             </ul>
             <button class="help-close" id="help-close">閉じる</button>
+        </div>
+    </div>
+    <div class="help-panel" id="split-panel">
+        <div class="help-content">
+            <h2>モデルを分割</h2>
+            <p>指定した軸の平面 (モデル中心) でカットし、片側だけを残します。カット断面には新しい辺が生成されます。</p>
+            <div class="split-label">軸</div>
+            <div class="split-row" id="split-axis-row">
+                <button class="split-btn selected" data-axis="0">X軸</button>
+                <button class="split-btn" data-axis="1">Y軸</button>
+                <button class="split-btn" data-axis="2">Z軸</button>
+            </div>
+            <div class="split-label">残す側</div>
+            <div class="split-row" id="split-side-row">
+                <button class="split-btn selected" data-side="1">＋側</button>
+                <button class="split-btn" data-side="-1">－側</button>
+            </div>
+            <button class="split-apply" id="split-apply">分割を実行</button>
+            <button class="help-close" id="split-close">キャンセル</button>
         </div>
     </div>
     <div class="help-panel" id="mesh-picker-panel">
@@ -468,14 +612,22 @@ container.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x23232a);
 
-const camera = new THREE.PerspectiveCamera(
-    45,
+const PERSP_FOV = 45;
+const perspCamera = new THREE.PerspectiveCamera(
+    PERSP_FOV,
     container.clientWidth / container.clientHeight,
     0.01,
     1000
 );
-camera.position.set(3, 3, 3);
-camera.lookAt(0, 0, 0);
+perspCamera.position.set(3, 3, 3);
+perspCamera.lookAt(0, 0, 0);
+
+const orthoCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 1000);
+orthoCamera.position.copy(perspCamera.position);
+orthoCamera.quaternion.copy(perspCamera.quaternion);
+
+let camera = perspCamera;
+let isOrtho = false;
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -546,6 +698,8 @@ function updateButtons() {
     btnDissolve.disabled = selectedVertex < 0;
     const btnHalve = document.getElementById('btn-halve');
     if (btnHalve) btnHalve.disabled = meshData.vertices.length < 8;
+    const btnSplit = document.getElementById('btn-split');
+    if (btnSplit) btnSplit.disabled = meshData.vertices.length < 3;
     const btnBridgeSend = document.getElementById('btn-bridge-send');
     if (btnBridgeSend) btnBridgeSend.disabled = !hasMesh;
 }
@@ -706,15 +860,30 @@ function fitCameraToMesh() {
     }
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    const fitDist = maxDim / (2 * Math.tan((Math.PI * camera.fov) / 360));
+    const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+    const fitDist = maxDim / (2 * Math.tan((Math.PI * PERSP_FOV) / 360));
     const dir = new THREE.Vector3(1, 0.8, 1).normalize();
-    camera.position.copy(center).add(dir.multiplyScalar(fitDist * 1.6));
+    const pos = center.clone().add(dir.multiplyScalar(fitDist * 1.6));
+    camera.position.copy(pos);
     controls.target.copy(center);
-    camera.near = Math.max(fitDist / 100, 0.001);
-    camera.far = fitDist * 100;
-    camera.updateProjectionMatrix();
+    perspCamera.near = orthoCamera.near = Math.max(fitDist / 100, 0.001);
+    perspCamera.far = orthoCamera.far = fitDist * 100;
+    updateOrthoBounds();
+    perspCamera.updateProjectionMatrix();
+    orthoCamera.updateProjectionMatrix();
     controls.update();
+}
+
+/* Ortho の視錐台サイズを現在のカメラ距離から算出 */
+function updateOrthoBounds() {
+    const dist = perspCamera.position.distanceTo(controls.target);
+    const halfH = dist * Math.tan((PERSP_FOV * Math.PI) / 360);
+    const aspect = container.clientWidth / container.clientHeight;
+    orthoCamera.left = -halfH * aspect;
+    orthoCamera.right = halfH * aspect;
+    orthoCamera.top = halfH;
+    orthoCamera.bottom = -halfH;
+    orthoCamera.updateProjectionMatrix();
 }
 
 /* =====================================================
@@ -1283,8 +1452,9 @@ function onResize() {
     const w = container.clientWidth;
     const h = container.clientHeight;
     renderer.setSize(w, h);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
+    perspCamera.aspect = w / h;
+    perspCamera.updateProjectionMatrix();
+    updateOrthoBounds();
 }
 window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', () => setTimeout(onResize, 300));
@@ -1444,6 +1614,252 @@ document.getElementById('btn-bridge-send').addEventListener('click', async () =>
 });
 
 detectBridge();
+
+/* =====================================================
+   ナビゲーション (正投影切替 / ビュー / 45度回転)
+===================================================== */
+const navProjBtn = document.getElementById('nav-proj');
+
+function syncCameras(pos, quat) {
+    perspCamera.position.copy(pos);
+    orthoCamera.position.copy(pos);
+    if (quat) {
+        perspCamera.quaternion.copy(quat);
+        orthoCamera.quaternion.copy(quat);
+    }
+    perspCamera.up.set(0, 1, 0);
+    orthoCamera.up.set(0, 1, 0);
+    perspCamera.lookAt(controls.target);
+    orthoCamera.lookAt(controls.target);
+}
+
+function togglePerspective() {
+    if (isOrtho) {
+        /* ortho → persp: ズーム倍率を距離に反映 */
+        const target = controls.target.clone();
+        const dir = perspCamera.position.clone().sub(target);
+        const dist = dir.length();
+        const newDist = dist / (orthoCamera.zoom || 1);
+        dir.normalize().multiplyScalar(newDist);
+        perspCamera.position.copy(target).add(dir);
+        perspCamera.quaternion.copy(orthoCamera.quaternion);
+        camera = perspCamera;
+        isOrtho = false;
+        navProjBtn.textContent = '透視';
+        navProjBtn.classList.remove('on');
+    } else {
+        /* persp → ortho: 現在の視野を写す */
+        updateOrthoBounds();
+        orthoCamera.position.copy(perspCamera.position);
+        orthoCamera.quaternion.copy(perspCamera.quaternion);
+        orthoCamera.zoom = 1;
+        orthoCamera.updateProjectionMatrix();
+        camera = orthoCamera;
+        isOrtho = true;
+        navProjBtn.textContent = '正投影';
+        navProjBtn.classList.add('on');
+    }
+    controls.object = camera;
+    controls.update();
+}
+
+function snapView(dirVec) {
+    const target = controls.target.clone();
+    const dist = perspCamera.position.distanceTo(target);
+    const dir = new THREE.Vector3(...dirVec).normalize();
+    const pos = target.clone().add(dir.multiplyScalar(dist));
+    syncCameras(pos);
+    orthoCamera.zoom = 1;
+    updateOrthoBounds();
+    controls.update();
+}
+
+function rotateYaw(deltaRad) {
+    const target = controls.target;
+    const offset = camera.position.clone().sub(target);
+    const cos = Math.cos(deltaRad), sin = Math.sin(deltaRad);
+    const newOffset = new THREE.Vector3(
+        offset.x * cos + offset.z * sin,
+        offset.y,
+        -offset.x * sin + offset.z * cos
+    );
+    syncCameras(target.clone().add(newOffset));
+    controls.update();
+}
+
+function rotatePitch(deltaRad) {
+    const target = controls.target;
+    const offset = camera.position.clone().sub(target);
+    const spherical = new THREE.Spherical().setFromVector3(offset);
+    spherical.phi = Math.max(
+        0.05,
+        Math.min(Math.PI - 0.05, spherical.phi + deltaRad)
+    );
+    const newOffset = new THREE.Vector3().setFromSpherical(spherical);
+    syncCameras(target.clone().add(newOffset));
+    controls.update();
+}
+
+navProjBtn.addEventListener('click', togglePerspective);
+document.getElementById('nav-view-top').addEventListener('click',
+    () => snapView([0, 1, 0]));
+document.getElementById('nav-view-bottom').addEventListener('click',
+    () => snapView([0, -1, 0]));
+document.getElementById('nav-view-front').addEventListener('click',
+    () => snapView([0, 0, 1]));
+document.getElementById('nav-view-back').addEventListener('click',
+    () => snapView([0, 0, -1]));
+document.getElementById('nav-view-right').addEventListener('click',
+    () => snapView([1, 0, 0]));
+document.getElementById('nav-view-left').addEventListener('click',
+    () => snapView([-1, 0, 0]));
+document.getElementById('nav-yaw-l').addEventListener('click',
+    () => rotateYaw(Math.PI / 4));
+document.getElementById('nav-yaw-r').addEventListener('click',
+    () => rotateYaw(-Math.PI / 4));
+document.getElementById('nav-pitch-u').addEventListener('click',
+    () => rotatePitch(-Math.PI / 4));
+document.getElementById('nav-pitch-d').addEventListener('click',
+    () => rotatePitch(Math.PI / 4));
+document.getElementById('nav-fit').addEventListener('click',
+    () => fitCameraToMesh());
+
+/* =====================================================
+   モデル分割 (Sutherland-Hodgman 三角形クリップ)
+   axis: 0=X, 1=Y, 2=Z / side: +1 or -1 (残す側)
+   平面位置は現メッシュ中心
+===================================================== */
+function bisectMesh(axis, side) {
+    const V = meshData.vertices;
+    if (V.length === 0) return null;
+    let sum = 0;
+    for (const v of V) sum += v[axis];
+    const planeD = sum / V.length;
+
+    const F = meshData.faces;
+    const newVerts = V.map(v => v.slice());
+    const signs = V.map(v => {
+        const d = (v[axis] - planeD) * side;
+        if (Math.abs(d) < 1e-8) return 0;
+        return d > 0 ? 1 : -1;
+    });
+
+    const edgeCache = new Map();
+    function getIntersection(a, b) {
+        const key = a < b ? a + ',' + b : b + ',' + a;
+        if (edgeCache.has(key)) return edgeCache.get(key);
+        const va = V[a], vb = V[b];
+        const t = (planeD - va[axis]) / (vb[axis] - va[axis]);
+        const p = [
+            va[0] + t * (vb[0] - va[0]),
+            va[1] + t * (vb[1] - va[1]),
+            va[2] + t * (vb[2] - va[2])
+        ];
+        const idx = newVerts.length;
+        newVerts.push(p);
+        edgeCache.set(key, idx);
+        return idx;
+    }
+
+    const newFaces = [];
+    for (const [a, b, c] of F) {
+        const verts = [a, b, c];
+        const ss = [signs[a], signs[b], signs[c]];
+        const negCount = ss.filter(s => s < 0).length;
+        const posCount = ss.filter(s => s > 0).length;
+        if (negCount === 0) {
+            newFaces.push([a, b, c]);
+            continue;
+        }
+        if (posCount === 0) continue;
+        /* 三角形の順序を保ったまま keep 側の頂点を並べる */
+        const kept = [];
+        for (let i = 0; i < 3; i++) {
+            const j = (i + 1) % 3;
+            const si = ss[i], sj = ss[j];
+            const vi = verts[i], vj = verts[j];
+            if (si >= 0) kept.push(vi);
+            if ((si > 0 && sj < 0) || (si < 0 && sj > 0)) {
+                kept.push(getIntersection(vi, vj));
+            }
+        }
+        /* 3-4頂点になるのでファン三角形化 */
+        for (let i = 1; i < kept.length - 1; i++) {
+            newFaces.push([kept[0], kept[i], kept[i + 1]]);
+        }
+    }
+
+    /* 未使用頂点を除去 & リマップ */
+    const used = new Set();
+    for (const f of newFaces) {
+        used.add(f[0]); used.add(f[1]); used.add(f[2]);
+    }
+    const remap = new Map();
+    const finalVerts = [];
+    for (let i = 0; i < newVerts.length; i++) {
+        if (used.has(i)) {
+            remap.set(i, finalVerts.length);
+            finalVerts.push(newVerts[i]);
+        }
+    }
+    const finalFaces = newFaces
+        .map(f => [remap.get(f[0]), remap.get(f[1]), remap.get(f[2])])
+        .filter(f => f[0] !== f[1] && f[1] !== f[2] && f[0] !== f[2]);
+    return { vertices: finalVerts, faces: finalFaces };
+}
+
+/* 分割モーダル */
+const splitPanel = document.getElementById('split-panel');
+const splitClose = document.getElementById('split-close');
+const splitApply = document.getElementById('split-apply');
+let splitAxis = 0, splitSide = 1;
+
+document.getElementById('btn-split').addEventListener('click', () => {
+    splitPanel.classList.add('show');
+});
+splitClose.addEventListener('click', () => splitPanel.classList.remove('show'));
+splitPanel.addEventListener('click', e => {
+    if (e.target === splitPanel) splitPanel.classList.remove('show');
+});
+
+document.querySelectorAll('#split-axis-row .split-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('#split-axis-row .split-btn')
+            .forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        splitAxis = parseInt(btn.dataset.axis, 10);
+    });
+});
+document.querySelectorAll('#split-side-row .split-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('#split-side-row .split-btn')
+            .forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        splitSide = parseInt(btn.dataset.side, 10);
+    });
+});
+splitApply.addEventListener('click', () => {
+    if (meshData.vertices.length === 0) return;
+    const snapshot = cloneMeshData(meshData);
+    const result = bisectMesh(splitAxis, splitSide);
+    if (!result || result.vertices.length === 0 || result.faces.length === 0) {
+        showToast('分割結果が空になりました');
+        return;
+    }
+    meshData = result;
+    history.push(snapshot);
+    if (history.length > HISTORY_MAX) history.shift();
+    setSelected(-1);
+    rebuildScene();
+    splitPanel.classList.remove('show');
+    const axisName = ['X', 'Y', 'Z'][splitAxis];
+    const sideName = splitSide > 0 ? '＋' : '－';
+    showToast(
+        `${axisName}軸${sideName}側で分割 ` +
+        `(${meshData.vertices.length}頂点/${meshData.faces.length}面)`
+    );
+});
+
 
 /* =====================================================
    URLハッシュ経由でメッシュを持ち出す
