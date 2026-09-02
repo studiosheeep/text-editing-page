@@ -259,6 +259,41 @@ body {
 .export-buttons .btn-close {
     background: #555;
 }
+/* =====================================================
+   メッシュ選択ボタン (ピッカー内)
+===================================================== */
+.mesh-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: #3a3a44;
+    border: 1px solid #555;
+    border-radius: 8px;
+    color: #eee;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: left;
+}
+.mesh-item:active {
+    background: #4a4a55;
+}
+.mesh-item.active-mesh {
+    border-color: #ffb35c;
+}
+.mesh-item .mesh-name {
+    font-weight: bold;
+}
+.mesh-item .mesh-active-tag {
+    color: #ffb35c;
+    font-size: 11px;
+    margin-left: 6px;
+}
+.mesh-item .mesh-count {
+    color: #999;
+    font-size: 12px;
+    margin-left: 10px;
+}
 </style>
 </head>
 <body>
@@ -351,6 +386,14 @@ body {
                 <li>「表示」で頂点マーカーの表示/非表示を切替</li>
             </ul>
             <button class="help-close" id="help-close">閉じる</button>
+        </div>
+    </div>
+    <div class="help-panel" id="mesh-picker-panel">
+        <div class="help-content">
+            <h2>Blenderのメッシュを選択</h2>
+            <p>選択中のメッシュが複数あります。読み込むものをタップしてください。</p>
+            <div id="mesh-picker-list" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"></div>
+            <button class="help-close" id="mesh-picker-cancel">キャンセル</button>
         </div>
     </div>
     <div class="help-panel" id="export-panel">
@@ -1149,30 +1192,95 @@ async function detectBridge() {
     } catch (e) { /* オフラインまたはブリッジ未起動: 何もしない */ }
 }
 
+async function loadMeshByName(name) {
+    const url = name
+        ? '/bridge/current?name=' + encodeURIComponent(name)
+        : '/bridge/current';
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) {
+        showToast('取得失敗: ' + await r.text());
+        return;
+    }
+    const text = await r.text();
+    let parsed = parseOBJ(text);
+    parsed = weldVertices(parsed);
+    if (parsed.vertices.length === 0 || parsed.faces.length === 0) {
+        showToast('メッシュが空です');
+        return;
+    }
+    meshData = parsed;
+    history.length = 0;
+    setSelected(-1);
+    rebuildScene();
+    fitCameraToMesh();
+    showToast(
+        (name ? `[${name}] ` : '') +
+        `Blenderから取得 ` +
+        `(${parsed.vertices.length}頂点/${parsed.faces.length}面)`
+    );
+}
+
+const meshPickerPanel = document.getElementById('mesh-picker-panel');
+const meshPickerList = document.getElementById('mesh-picker-list');
+const meshPickerCancel = document.getElementById('mesh-picker-cancel');
+
+meshPickerCancel.addEventListener('click',
+    () => meshPickerPanel.classList.remove('show'));
+meshPickerPanel.addEventListener('click', e => {
+    if (e.target === meshPickerPanel) meshPickerPanel.classList.remove('show');
+});
+
+function showMeshPicker(items) {
+    meshPickerList.innerHTML = '';
+    for (const item of items) {
+        const btn = document.createElement('button');
+        btn.className = 'mesh-item' + (item.active ? ' active-mesh' : '');
+        btn.innerHTML =
+            '<span><span class="mesh-name">' +
+            escapeHTML(item.name) + '</span>' +
+            (item.active ? '<span class="mesh-active-tag">アクティブ</span>' : '') +
+            '</span>' +
+            '<span class="mesh-count">' +
+            item.vertices + '頂点 / ' + item.faces + '面</span>';
+        btn.addEventListener('click', async () => {
+            meshPickerPanel.classList.remove('show');
+            try {
+                showToast('Blenderから取得中...', 3000);
+                await loadMeshByName(item.name);
+            } catch (e) {
+                showToast('エラー: ' + (e && e.message || 'error'));
+            }
+        });
+        meshPickerList.appendChild(btn);
+    }
+    meshPickerPanel.classList.add('show');
+}
+
+function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;',
+        '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
 document.getElementById('btn-bridge-load').addEventListener('click', async () => {
     try {
-        showToast('Blenderから取得中...', 3000);
-        const r = await fetch('/bridge/current', { cache: 'no-store' });
+        showToast('Blenderのメッシュ一覧を取得中...', 2000);
+        const r = await fetch('/bridge/list', { cache: 'no-store' });
         if (!r.ok) {
-            showToast('取得失敗: ' + await r.text());
+            showToast('一覧取得失敗: ' + await r.text());
             return;
         }
-        const text = await r.text();
-        let parsed = parseOBJ(text);
-        parsed = weldVertices(parsed);
-        if (parsed.vertices.length === 0 || parsed.faces.length === 0) {
-            showToast('メッシュが空か、選択されていません');
+        const items = await r.json();
+        if (!Array.isArray(items) || items.length === 0) {
+            showToast('選択メッシュがありません');
             return;
         }
-        meshData = parsed;
-        history.length = 0;
-        setSelected(-1);
-        rebuildScene();
-        fitCameraToMesh();
-        showToast(
-            `Blenderから取得 ` +
-            `(${parsed.vertices.length}頂点/${parsed.faces.length}面)`
-        );
+        if (items.length === 1) {
+            await loadMeshByName(items[0].name);
+        } else {
+            showMeshPicker(items);
+        }
     } catch (e) {
         showToast('エラー: ' + (e && e.message || 'error'));
     }

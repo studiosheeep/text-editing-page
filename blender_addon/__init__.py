@@ -89,13 +89,53 @@ def _select_target_mesh():
     return None
 
 
-def _mesh_to_obj_text():
-    obj = _select_target_mesh()
-    if obj is None:
-        return None
+def _list_candidate_meshes():
+    """
+    現在選択中のメッシュ一覧 (名前・頂点数・面数・アクティブか)。
+    選択が0のときはアクティブメッシュ1つだけを返す (完全に何もなければ空)。
+    """
+    active = bpy.context.view_layer.objects.active
+    active_name = active.name if active is not None else None
+    seen = set()
+    result = []
+    for obj in bpy.context.selected_objects:
+        if obj.type != 'MESH':
+            continue
+        if obj.name in seen:
+            continue
+        seen.add(obj.name)
+        result.append({
+            "name": obj.name,
+            "vertices": len(obj.data.vertices),
+            "faces": len(obj.data.polygons),
+            "active": obj.name == active_name
+        })
+    if not result and active is not None and active.type == 'MESH':
+        result.append({
+            "name": active.name,
+            "vertices": len(active.data.vertices),
+            "faces": len(active.data.polygons),
+            "active": True
+        })
+    return result
+
+
+def _mesh_to_obj_text(name=None):
+    """
+    name 指定時: その名前のメッシュを送る (存在しなければ None)。
+    未指定時 : アクティブ (なければ選択のうち先頭) を送る。
+    """
+    if name:
+        obj = bpy.data.objects.get(name)
+        if obj is None or obj.type != 'MESH':
+            return None
+    else:
+        obj = _select_target_mesh()
+        if obj is None:
+            return None
     mesh = obj.data
     matrix = obj.matrix_world
-    lines = ["# from Blender iPad Editor Bridge"]
+    lines = [f"# from Blender iPad Editor Bridge: {obj.name}"]
     for v in mesh.vertices:
         co = matrix @ v.co
         lines.append(f"v {co.x:.6f} {co.y:.6f} {co.z:.6f}")
@@ -213,7 +253,10 @@ class BridgeHandler(BaseHTTPRequestHandler):
         self._send(204, b"")
 
     def do_GET(self):
-        path = self.path.split("?", 1)[0]
+        from urllib.parse import urlsplit, parse_qs
+        parts = urlsplit(self.path)
+        path = parts.path
+        query = parse_qs(parts.query)
         try:
             if path in ("/", "/index.html", "/editor.html"):
                 self._send_editor()
@@ -222,14 +265,18 @@ class BridgeHandler(BaseHTTPRequestHandler):
                     200,
                     json.dumps({
                         "app": "ipad-editor-bridge",
-                        "version": "1.0"
+                        "version": "1.1"
                     }),
                     "application/json"
                 )
+            elif path == "/bridge/list":
+                data = run_on_main(_list_candidate_meshes)
+                self._send(200, json.dumps(data), "application/json")
             elif path == "/bridge/current":
-                text = run_on_main(_mesh_to_obj_text)
+                name = query.get("name", [None])[0]
+                text = run_on_main(lambda: _mesh_to_obj_text(name))
                 if text is None:
-                    self._send(404, "選択メッシュがありません")
+                    self._send(404, "対象メッシュが見つかりません")
                 else:
                     self._send(200, text)
             else:
