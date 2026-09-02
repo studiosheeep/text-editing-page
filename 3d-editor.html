@@ -320,7 +320,7 @@ body {
     <div class="help-panel" id="help-panel">
         <div class="help-content">
             <h2>ローポリ頂点融解エディタ</h2>
-            <p>iPad の Safari から使えるシンプルな3Dモデル編集ツールです。OBJ形式のローポリモデル (~300頂点以下) を読み込み、不要な頂点を Blender 風の「融解」で削除できます。</p>
+            <p>iPad の Safari から使えるシンプルな3Dモデル編集ツールです。OBJ / FBX 形式のローポリモデル (~300頂点以下) を読み込み、不要な頂点を Blender 風の「融解」で削除して OBJ に書き出せます。</p>
             <h3>操作</h3>
             <ul>
                 <li>1本指ドラッグ: 回転</li>
@@ -331,9 +331,10 @@ body {
             </ul>
             <h3>読み込み・保存</h3>
             <ul>
-                <li>「読み込み」から .obj ファイルを選択</li>
-                <li>「保存」で編集結果を .obj でダウンロード</li>
+                <li>「読み込み」から .obj または .fbx ファイルを選択</li>
+                <li>「保存」で編集結果を .obj でコピー/ダウンロード</li>
                 <li>「サンプル」で内蔵のテスト用モデルを表示</li>
+                <li>読み込み時に同一座標の頂点は自動で溶接されます</li>
             </ul>
             <h3>ヒント</h3>
             <ul>
@@ -358,7 +359,7 @@ body {
     </div>
 </div>
 </div>
-<input id="file-input" type="file" accept=".obj,text/plain">
+<input id="file-input" type="file" accept=".obj,.fbx,text/plain">
 <!-- =================================================
      Three.js (ESM + import map)
 ================================================= -->
@@ -533,6 +534,89 @@ function parseOBJ(text) {
         }
     }
     return { vertices, faces };
+}
+
+/* =====================================================
+   FBX 読み込み (Three.js FBXLoader を動的import)
+===================================================== */
+let _fbxLoaderPromise = null;
+async function loadFBXLoader() {
+    if (!_fbxLoaderPromise) {
+        _fbxLoaderPromise = import(
+            'three/addons/loaders/FBXLoader.js'
+        ).then(m => m.FBXLoader);
+    }
+    return _fbxLoaderPromise;
+}
+
+async function parseFBX(arrayBuffer) {
+    const FBXLoader = await loadFBXLoader();
+    const loader = new FBXLoader();
+    const group = loader.parse(arrayBuffer, '');
+    group.updateMatrixWorld(true);
+
+    const vertices = [];
+    const faces = [];
+    const v = new THREE.Vector3();
+    group.traverse(obj => {
+        if (!obj.isMesh || !obj.geometry) return;
+        const geo = obj.geometry;
+        const posAttr = geo.getAttribute('position');
+        if (!posAttr) return;
+        const index = geo.index;
+        const baseIdx = vertices.length;
+        const m = obj.matrixWorld;
+        for (let i = 0; i < posAttr.count; i++) {
+            v.fromBufferAttribute(posAttr, i).applyMatrix4(m);
+            vertices.push([v.x, v.y, v.z]);
+        }
+        if (index) {
+            for (let i = 0; i < index.count; i += 3) {
+                faces.push([
+                    baseIdx + index.getX(i),
+                    baseIdx + index.getX(i + 1),
+                    baseIdx + index.getX(i + 2)
+                ]);
+            }
+        } else {
+            for (let i = 0; i < posAttr.count; i += 3) {
+                faces.push([baseIdx + i, baseIdx + i + 1, baseIdx + i + 2]);
+            }
+        }
+    });
+    return { vertices, faces };
+}
+
+/* =====================================================
+   頂点溶接 (同一座標をマージ)
+===================================================== */
+function weldVertices(data, epsilon = 1e-4) {
+    const scale = 1 / epsilon;
+    const key = v =>
+        Math.round(v[0] * scale) + ',' +
+        Math.round(v[1] * scale) + ',' +
+        Math.round(v[2] * scale);
+    const map = new Map();
+    const newVerts = [];
+    const remap = new Array(data.vertices.length);
+    for (let i = 0; i < data.vertices.length; i++) {
+        const k = key(data.vertices[i]);
+        let idx = map.get(k);
+        if (idx === undefined) {
+            idx = newVerts.length;
+            map.set(k, idx);
+            newVerts.push(data.vertices[i].slice());
+        }
+        remap[i] = idx;
+    }
+    const newFaces = [];
+    for (const f of data.faces) {
+        const a = remap[f[0]];
+        const b = remap[f[1]];
+        const c = remap[f[2]];
+        if (a !== b && b !== c && a !== c) newFaces.push([a, b, c]);
+    }
+    return { vertices: newVerts, faces: newFaces };
 }
 
 function exportOBJ(data) {
@@ -853,11 +937,21 @@ btnLoad.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', async () => {
     const file = fileInput.files && fileInput.files[0];
     if (!file) return;
+    const name = file.name.toLowerCase();
     try {
-        const text = await file.text();
-        const parsed = parseOBJ(text);
+        let parsed;
+        if (name.endsWith('.fbx')) {
+            showToast('FBXを読み込み中...', 3000);
+            const buf = await file.arrayBuffer();
+            parsed = await parseFBX(buf);
+            parsed = weldVertices(parsed);
+        } else {
+            const text = await file.text();
+            parsed = parseOBJ(text);
+            parsed = weldVertices(parsed);
+        }
         if (parsed.vertices.length === 0 || parsed.faces.length === 0) {
-            showToast('OBJの解析に失敗しました');
+            showToast('解析に失敗しました (面が見つかりません)');
             return;
         }
         meshData = parsed;
@@ -865,9 +959,12 @@ fileInput.addEventListener('change', async () => {
         setSelected(-1);
         rebuildScene();
         fitCameraToMesh();
-        showToast(`${file.name} を読み込みました`);
+        showToast(
+            `${file.name} を読み込みました ` +
+            `(${meshData.vertices.length}頂点/${meshData.faces.length}面)`
+        );
     } catch (e) {
-        showToast('読み込みエラー: ' + e.message);
+        showToast('読み込みエラー: ' + (e && e.message || 'error'));
     }
     fileInput.value = '';
 });
