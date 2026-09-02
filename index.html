@@ -123,6 +123,12 @@ body {
     margin-bottom: 12px;
 }
 /*
+   空タイトルは非表示
+*/
+.panel-title:empty {
+    display: none;
+}
+/*
    入力行
 */
 .input-row {
@@ -130,6 +136,12 @@ body {
     align-items: center;
     gap: 7px;
     margin-bottom: 9px;
+}
+/*
+   最終行の余白を除去
+*/
+.input-row:last-child {
+    margin-bottom: 0;
 }
 /*
    ラベル
