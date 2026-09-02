@@ -742,13 +742,19 @@ function insertAtCursor(text) {
         + current.substring(end);
     const newPosition =
         start + text.length;
-    editor.focus();
     editor.setSelectionRange(
         newPosition,
         newPosition
     );
     updateHighlight();
     closePanels();
+    /*
+       挿入後は入力欄から離れる
+       (スマホのIMEを一旦解除するため)
+    */
+    if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+    }
 }
 /* =====================================================
    ページ
