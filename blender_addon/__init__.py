@@ -91,32 +91,50 @@ def _select_target_mesh():
 
 def _list_candidate_meshes():
     """
-    現在選択中のメッシュ一覧 (名前・頂点数・面数・アクティブか)。
-    選択が0のときはアクティブメッシュ1つだけを返す (完全に何もなければ空)。
+    現在のシーン内の全メッシュ (アクティブ/選択/非表示状態も含めて返す)。
+    view_layer.objects を優先して並び順を安定させ、無ければ scene.objects を走査。
     """
     active = bpy.context.view_layer.objects.active
     active_name = active.name if active is not None else None
-    seen = set()
+
+    try:
+        selected_names = {o.name for o in bpy.context.selected_objects}
+    except Exception:
+        selected_names = set()
+
+    try:
+        objects = list(bpy.context.view_layer.objects)
+    except Exception:
+        objects = list(bpy.context.scene.objects)
+
     result = []
-    for obj in bpy.context.selected_objects:
-        if obj.type != 'MESH':
+    seen = set()
+    for obj in objects:
+        if obj is None or obj.type != 'MESH':
             continue
         if obj.name in seen:
             continue
         seen.add(obj.name)
+        try:
+            hidden = obj.hide_get() or obj.hide_viewport
+        except Exception:
+            hidden = bool(getattr(obj, 'hide_viewport', False))
         result.append({
             "name": obj.name,
             "vertices": len(obj.data.vertices),
             "faces": len(obj.data.polygons),
-            "active": obj.name == active_name
+            "active": obj.name == active_name,
+            "selected": obj.name in selected_names,
+            "hidden": bool(hidden),
         })
-    if not result and active is not None and active.type == 'MESH':
-        result.append({
-            "name": active.name,
-            "vertices": len(active.data.vertices),
-            "faces": len(active.data.polygons),
-            "active": True
-        })
+
+    # 並び順: アクティブ → 選択 → 表示中 → 非表示 (アルファベット順で安定)
+    result.sort(key=lambda m: (
+        0 if m["active"] else 1,
+        0 if m["selected"] else 1,
+        1 if m["hidden"] else 0,
+        m["name"].lower()
+    ))
     return result
 
 

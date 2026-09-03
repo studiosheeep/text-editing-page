@@ -388,18 +388,52 @@ body {
 .mesh-item.active-mesh {
     border-color: #ffb35c;
 }
+.mesh-item.hidden-mesh {
+    opacity: 0.55;
+}
 .mesh-item .mesh-name {
     font-weight: bold;
 }
-.mesh-item .mesh-active-tag {
-    color: #ffb35c;
-    font-size: 11px;
+.mesh-item .mesh-tag {
+    display: inline-block;
+    font-size: 10px;
+    line-height: 1;
+    padding: 3px 6px;
+    border-radius: 4px;
     margin-left: 6px;
+    vertical-align: middle;
+}
+.mesh-item .mesh-tag.tag-active {
+    color: #1e1e22;
+    background: #ffb35c;
+}
+.mesh-item .mesh-tag.tag-selected {
+    color: #eee;
+    background: #4287f5;
+}
+.mesh-item .mesh-tag.tag-hidden {
+    color: #ccc;
+    background: #555;
 }
 .mesh-item .mesh-count {
     color: #999;
     font-size: 12px;
     margin-left: 10px;
+    white-space: nowrap;
+}
+.mesh-item .mesh-left {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 0;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+.mesh-item .mesh-name-wrap {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 </style>
 </head>
@@ -575,7 +609,7 @@ body {
     <div class="help-panel" id="mesh-picker-panel">
         <div class="help-content">
             <h2>Blenderのメッシュを選択</h2>
-            <p>選択中のメッシュが複数あります。読み込むものをタップしてください。</p>
+            <p>Blenderシーンのメッシュ一覧です。非表示・非選択のオブジェクトも表示されます。読み込むものをタップしてください。</p>
             <div id="mesh-picker-list" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"></div>
             <button class="help-close" id="mesh-picker-cancel">キャンセル</button>
         </div>
@@ -1606,14 +1640,23 @@ function showMeshPicker(items) {
     meshPickerList.innerHTML = '';
     for (const item of items) {
         const btn = document.createElement('button');
-        btn.className = 'mesh-item' + (item.active ? ' active-mesh' : '');
+        let cls = 'mesh-item';
+        if (item.active) cls += ' active-mesh';
+        if (item.hidden) cls += ' hidden-mesh';
+        btn.className = cls;
+        let tags = '';
+        if (item.active)   tags += '<span class="mesh-tag tag-active">アクティブ</span>';
+        if (item.selected && !item.active) tags += '<span class="mesh-tag tag-selected">選択中</span>';
+        if (item.hidden)   tags += '<span class="mesh-tag tag-hidden">非表示</span>';
         btn.innerHTML =
-            '<span><span class="mesh-name">' +
-            escapeHTML(item.name) + '</span>' +
-            (item.active ? '<span class="mesh-active-tag">アクティブ</span>' : '') +
+            '<span class="mesh-left">' +
+              '<span class="mesh-name-wrap"><span class="mesh-name">' +
+                escapeHTML(item.name) + '</span></span>' +
+              tags +
             '</span>' +
             '<span class="mesh-count">' +
-            item.vertices + '頂点 / ' + item.faces + '面</span>';
+              item.vertices + '頂点 / ' + item.faces + '面' +
+            '</span>';
         btn.addEventListener('click', async () => {
             meshPickerPanel.classList.remove('show');
             try {
@@ -1645,7 +1688,7 @@ document.getElementById('btn-bridge-load').addEventListener('click', async () =>
         }
         const items = await r.json();
         if (!Array.isArray(items) || items.length === 0) {
-            showToast('選択メッシュがありません');
+            showToast('Blenderシーンにメッシュがありません');
             return;
         }
         if (items.length === 1) {
