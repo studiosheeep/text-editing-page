@@ -1493,6 +1493,31 @@ window.addEventListener('resize', onResize);
 window.addEventListener('orientationchange', () => setTimeout(onResize, 300));
 
 /* =====================================================
+   iOS Safari キーボード対策
+   input/textarea を閉じた後、視覚ビューポートが押し上がったまま
+   戻らない現象を防ぐ。focusout でスクロールを 0 に戻し、
+   visualViewport の変化に応じてページ位置をリセット。
+===================================================== */
+function resetScroll() {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+}
+window.addEventListener('focusout', () => {
+    /* 少し待ってからリセット (キーボード閉じアニメの後) */
+    setTimeout(resetScroll, 100);
+    setTimeout(resetScroll, 300);
+});
+if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+        /* キーボード閉じた瞬間 (視覚ビューポート = レイアウトビューポート に戻った時) */
+        if (Math.abs(window.visualViewport.height - window.innerHeight) < 2) {
+            resetScroll();
+        }
+    });
+}
+
+/* =====================================================
    描画ループ
 ===================================================== */
 function animate() {
