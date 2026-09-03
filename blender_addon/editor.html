@@ -445,6 +445,10 @@ body {
         <span class="tool-icon">⬆</span>
         <span>→Blender</span>
     </button>
+    <button class="tool-button no-bridge-only" id="btn-bridge-open" hidden>
+        <span class="tool-icon">🔗</span>
+        <span>Blender接続</span>
+    </button>
     <button class="tool-button" id="btn-help">
         <span class="tool-icon">?</span>
         <span>ヘルプ</span>
@@ -522,6 +526,23 @@ body {
                 <li>「表示」で頂点マーカーの表示/非表示を切替</li>
             </ul>
             <button class="help-close" id="help-close">閉じる</button>
+        </div>
+    </div>
+    <div class="help-panel" id="lan-open-panel">
+        <div class="help-content">
+            <h2>Blender ローカルURLを開く</h2>
+            <p>PC側で Blender アドオン「iPad Bridge」を起動し、パネルに表示されている URL (例: <code>http://192.168.1.50:8765/</code>) を入力してください。同じLAN内から接続できます。</p>
+            <input type="url" id="lan-url-input"
+                placeholder="http://192.168.x.x:8765/"
+                inputmode="url"
+                autocapitalize="off"
+                autocomplete="off"
+                spellcheck="false"
+                style="width:100%;padding:12px;background:#1a1a1e;color:#ddd;border:1px solid #444;border-radius:6px;font-size:14px;-webkit-user-select:text;user-select:text;font-family:monospace">
+            <div class="export-buttons" style="margin-top:12px">
+                <button class="btn-copy" id="lan-open-go">開く</button>
+                <button class="btn-close" id="lan-open-close">キャンセル</button>
+            </div>
         </div>
     </div>
     <div class="help-panel" id="split-panel">
@@ -1486,17 +1507,28 @@ updateButtons();
    - 該当時のみ Blender→ / →Blender ボタンを表示
 ===================================================== */
 async function detectBridge() {
+    let found = false;
     try {
         const r = await fetch('/bridge/status', { cache: 'no-store' });
-        if (!r.ok) return;
-        const j = await r.json();
-        if (j && j.app === 'ipad-editor-bridge') {
-            document.querySelectorAll('.bridge-only').forEach(el => {
-                el.hidden = false;
-            });
-            updateButtons();
+        if (r.ok) {
+            const j = await r.json();
+            if (j && j.app === 'ipad-editor-bridge') found = true;
         }
-    } catch (e) { /* オフラインまたはブリッジ未起動: 何もしない */ }
+    } catch (e) { /* HTTPS→HTTP は Mixed Content で拒否される */ }
+    if (found) {
+        /* LAN URL経由: Blender連携ボタンを表示 */
+        document.querySelectorAll('.bridge-only')
+            .forEach(el => el.hidden = false);
+        document.querySelectorAll('.no-bridge-only')
+            .forEach(el => el.hidden = true);
+    } else {
+        /* GitHub Pages / Artifact 等: 接続ボタンを表示 */
+        document.querySelectorAll('.bridge-only')
+            .forEach(el => el.hidden = true);
+        document.querySelectorAll('.no-bridge-only')
+            .forEach(el => el.hidden = false);
+    }
+    updateButtons();
 }
 
 async function loadMeshByName(name) {
@@ -1618,6 +1650,50 @@ document.getElementById('btn-bridge-send').addEventListener('click', async () =>
 });
 
 detectBridge();
+
+/* =====================================================
+   Blender ローカルURL 接続モーダル (GitHub Pages 用)
+   - LAN URL を入力すると window.location.href で遷移
+   - 前回入力を localStorage に保存
+===================================================== */
+const LAN_URL_KEY = 'ipadEditor.lanUrl';
+const lanOpenPanel = document.getElementById('lan-open-panel');
+const lanUrlInput = document.getElementById('lan-url-input');
+
+document.getElementById('btn-bridge-open').addEventListener('click', () => {
+    let saved = '';
+    try { saved = localStorage.getItem(LAN_URL_KEY) || ''; } catch (e) {}
+    lanUrlInput.value = saved;
+    lanOpenPanel.classList.add('show');
+    /*
+       iOSキーボードの自動フォーカスは遅延させる
+       (モーダル表示アニメと競合すると効かないため)
+    */
+    setTimeout(() => { lanUrlInput.focus(); }, 100);
+});
+
+document.getElementById('lan-open-close').addEventListener('click',
+    () => lanOpenPanel.classList.remove('show'));
+lanOpenPanel.addEventListener('click', e => {
+    if (e.target === lanOpenPanel) lanOpenPanel.classList.remove('show');
+});
+
+document.getElementById('lan-open-go').addEventListener('click', () => {
+    let url = lanUrlInput.value.trim();
+    if (!url) {
+        showToast('URLを入力してください');
+        return;
+    }
+    /* スキーム未指定なら http:// を付ける */
+    if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
+    try { localStorage.setItem(LAN_URL_KEY, url); } catch (e) {}
+    window.location.href = url;
+});
+
+/* Enterキーでも開く */
+lanUrlInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('lan-open-go').click();
+});
 
 /* =====================================================
    ナビゲーション (正投影切替 / ビュー / 45度回転)
