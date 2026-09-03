@@ -110,6 +110,13 @@ body {
     position: relative;
     min-height: 0;
     background: #23232a;
+    /*
+       iOSのホームインジケータ帯を canvas 領域の外に押し出す。
+       ここに touch が入ると OrbitControls がドラッグとして拾って
+       モデルが勝手に回転してしまうのを防ぐ。
+       Face ID iPad では ~20px、ホームボタン iPad でも 12px は確保。
+    */
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
 }
 .canvas-container canvas {
     display: block;
@@ -1516,8 +1523,15 @@ helpPanel.addEventListener('click', e => {
    リサイズ
 ===================================================== */
 function onResize() {
+    /*
+       container.clientHeight は padding を含むので、
+       ホームインジケータ用の padding-bottom 分を引く
+    */
+    const cs = getComputedStyle(container);
+    const pb = parseFloat(cs.paddingBottom) || 0;
+    const pt = parseFloat(cs.paddingTop) || 0;
     const w = container.clientWidth;
-    const h = container.clientHeight;
+    const h = Math.max(1, container.clientHeight - pb - pt);
     renderer.setSize(w, h);
     perspCamera.aspect = w / h;
     perspCamera.updateProjectionMatrix();
@@ -1559,6 +1573,8 @@ function animate() {
     controls.update();
     renderer.render(scene, camera);
 }
+/* padding-bottom を反映した正しい初期サイズを1回計算 */
+onResize();
 animate();
 
 /* =====================================================
