@@ -16,6 +16,14 @@
     -webkit-user-select: none;
     user-select: none;
 }
+/*
+   HTML の hidden 属性を確実に効かせる。
+   .tool-button { display:flex } がUA styleを上書きしてしまうため
+   !important で無条件に非表示に。
+*/
+[hidden] {
+    display: none !important;
+}
 html,
 body {
     margin: 0;
