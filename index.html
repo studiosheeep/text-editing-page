@@ -677,7 +677,16 @@ input:focus {
         <button onclick="saveTxt()">
             TXT保存
         </button>
+        <button onclick="loadTxt()">
+            TXT読み込み
+        </button>
     </div>
+    <input
+        id="file-input"
+        type="file"
+        accept=".txt,text/plain"
+        hidden
+    >
 </div>
 </div>
 <script>
@@ -1046,6 +1055,49 @@ function saveTxt() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 }
+/* =====================================================
+   TXT読み込み
+===================================================== */
+const fileInput =
+    document.getElementById("file-input");
+function loadTxt() {
+    fileInput.click();
+}
+fileInput.addEventListener(
+    "change",
+    event => {
+        const file =
+            event.target.files[0];
+        if (!file) {
+            return;
+        }
+        if (
+            editor.value &&
+            !confirm(
+                "現在の内容を上書きします。よろしいですか？"
+            )
+        ) {
+            fileInput.value = "";
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = e => {
+            editor.value = e.target.result;
+            updateHighlight();
+        };
+        reader.onerror = () => {
+            alert(
+                "読み込みに失敗しました。"
+            );
+        };
+        reader.readAsText(file, "utf-8");
+        /*
+           同じファイルの再選択でも
+           changeが発火するようにリセット
+        */
+        fileInput.value = "";
+    }
+);
 /* =====================================================
    初期化
 ===================================================== */
