@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>創作お題ジェネレーター</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="お題">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+/* =====================================================
+   基本
+===================================================== */
+* {
+    box-sizing: border-box;
+}
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100%;
+    background: #f5f5f7;
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Hiragino Kaku Gothic ProN",
+        "Yu Gothic",
+        sans-serif;
+    color: #222;
+    -webkit-text-size-adjust: 100%;
+}
+/* =====================================================
+   アプリ全体
+===================================================== */
+.app {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 0 14px 40px;
+}
+/* =====================================================
+   ヘッダー
+===================================================== */
+.header {
+    padding: 18px 2px 12px;
+}
+.header-title {
+    font-size: 20px;
+    font-weight: bold;
+}
+.header-sub {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #777;
+}
+/* =====================================================
+   設定行 (ジャンル / 形式)
+===================================================== */
+.settings {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.segment {
+    display: flex;
+    background: #e6e6e8;
+    border-radius: 9px;
+    padding: 2px;
+    gap: 2px;
+}
+.segment button {
+    border: none;
+    background: transparent;
+    color: #444;
+    font-size: 13px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+}
+.segment button.active {
+    background: #ffffff;
+    color: #111;
+    font-weight: bold;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+/* =====================================================
+   お題カード
+===================================================== */
+.card {
+    background: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    padding: 18px 16px 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+}
+/*
+   カード上部のバッジ
+*/
+.badges {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.badge {
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    color: #555;
+    background: #fafafa;
+}
+.badge.genre-real {
+    background: #eef3ff;
+    border-color: #ccd9f5;
+    color: #3a5a9b;
+}
+.badge.genre-fantasy {
+    background: #f5eefb;
+    border-color: #e0cdf0;
+    color: #75439b;
+}
+/*
+   本文
+*/
+.prompt-text {
+    flex: 1;
+    font-size: 17px;
+    line-height: 1.9;
+    white-space: pre-wrap;
+    word-break: normal;
+    overflow-wrap: anywhere;
+}
+.prompt-text.fade {
+    animation: fadein 0.45s ease;
+}
+@keyframes fadein {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+/*
+   縛り・読後感
+*/
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px dashed #e2e2e4;
+}
+.chip {
+    font-size: 12px;
+    color: #555;
+    background: #f2f2f4;
+    border-radius: 7px;
+    padding: 5px 9px;
+}
+.chip b {
+    color: #888;
+    font-weight: normal;
+    margin-right: 4px;
+}
+/* =====================================================
+   タイマー
+===================================================== */
+.timer {
+    margin-top: 12px;
+}
+.timer-bar {
+    width: 100%;
+    height: 5px;
+    background: #e3e3e6;
+    border-radius: 999px;
+    overflow: hidden;
+}
+.timer-fill {
+    height: 100%;
+    width: 0%;
+    background: #4a7ad6;
+    border-radius: 999px;
+}
+.timer-label {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #888;
+    text-align: right;
+}
+.timer.paused .timer-fill {
+    background: #bbb;
+}
+/* =====================================================
+   操作ボタン
+===================================================== */
+.actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+}
+.action-button {
+    flex: 1;
+    min-height: 46px;
+    border: 1px solid #ddd;
+    background: #ffffff;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #333;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+.action-button:active {
+    background: #eeeeF3;
+}
+.action-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+.action-button.primary {
+    background: #4a7ad6;
+    border-color: #4a7ad6;
+    color: #ffffff;
+}
+/* =====================================================
+   保存リスト
+===================================================== */
+.saved {
+    margin-top: 26px;
+}
+.saved-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+.saved-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #444;
+}
+.text-button {
+    border: none;
+    background: none;
+    color: #4a7ad6;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 4px;
+}
+.saved-empty {
+    font-size: 12px;
+    color: #999;
+    padding: 10px 2px;
+}
+.saved-item {
+    background: #ffffff;
+    border: 1px solid #e2e2e4;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 8px;
+}
+.saved-item-text {
+    font-size: 13px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+}
+.saved-item-foot {
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+    margin-top: 6px;
+}
+/* =====================================================
+   トースト
+===================================================== */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 26px;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-size: 13px;
+    padding: 9px 16px;
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+}
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+/* =====================================================
+   注記
+===================================================== */
+.note {
+    margin-top: 18px;
+    font-size: 11px;
+    color: #999;
+    line-height: 1.7;
+}
+</style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <div class="header-title">創作お題ジェネレーター</div>
+        <div class="header-sub">30秒ごとに、お題かあらすじがひとつ生まれます。</div>
+    </div>
+
+    <!-- 設定 -->
+    <div class="settings">
+        <div class="segment" id="genre-seg">
+            <button data-genre="any" class="active">おまかせ</button>
+            <button data-genre="real">現実</button>
+            <button data-genre="fantasy">ファンタジー</button>
+        </div>
+        <div class="segment" id="type-seg">
+            <button data-type="any" class="active">両方</button>
+            <button data-type="theme">お題</button>
+            <button data-type="story">あらすじ</button>
+        </div>
+    </div>
+
+    <!-- お題カード -->
+    <div class="card">
+        <div class="badges" id="badges"></div>
+        <div class="prompt-text" id="prompt-text">読み込み中…</div>
+        <div class="chips" id="chips"></div>
+    </div>
+
+    <!-- タイマー -->
+    <div class="timer" id="timer">
+        <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+        <div class="timer-label" id="timer-label">次のお題まで 30 秒</div>
+    </div>
+
+    <!-- 操作 -->
+    <div class="actions">
+        <button class="action-button primary" id="btn-next">
+            <span class="action-icon">🎲</span><span>次のお題</span>
+        </button>
+        <button class="action-button" id="btn-pause">
+            <span class="action-icon">⏸</span><span id="pause-label">一時停止</span>
+        </button>
+        <button class="action-button" id="btn-save">
+            <span class="action-icon">★</span><span>保存</span>
+        </button>
+        <button class="action-button" id="btn-copy">
+            <span class="action-icon">📋</span><span>コピー</span>
+        </button>
+    </div>
+
+    <!-- 保存したお題 -->
+    <div class="saved">
+        <div class="saved-head">
+            <div class="saved-title">保存したお題 <span id="saved-count"></span></div>
+            <div>
+                <button class="text-button" id="btn-copy-all">まとめてコピー</button>
+                <button class="text-button" id="btn-clear">全消去</button>
+            </div>
+        </div>
+        <div id="saved-list"></div>
+    </div>
+
+    <div class="note">
+        ・キーボード: スペースで一時停止 / → で次のお題<br>
+        ・保存したお題はこのブラウザ内(localStorage)にだけ残ります。
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================
+   語彙データ
+   ---------------------------------------------------
+   story: あらすじ生成用のパーツ
+     stage   … 舞台 (名詞句)
+     hero    … 主人公 (名詞句)
+     event   … 発端 (言い切りの節)
+     twist   … ひねり (接続詞込みの一文)
+     goal    … 主人公の選択 (終止形の節)
+   theme: お題生成用のキーワード
+===================================================== */
+var DATA = {
+    real: {
+        label: "現実",
+        hero: [
+            "定時で帰ることだけが取り柄の事務員",
+            "閉店間際のスーパーにしか行かない大学生",
+            "二十年ぶりに故郷へ戻ってきた元漁師",
+            "深夜ラジオへの投稿だけが生きがいの高校生",
+            "人の名前をうまく覚えられない元教師",
+            "客の来ない写真館の三代目",
+            "引っ越し屋のアルバイトを掛け持ちする双子の姉",
+            "献立を考えるのが下手な新米の父親",
+            "落とし物ばかり拾ってしまう交番勤務の巡査",
+            "もう歌わないと決めた元バンドマン",
+            "毎朝おなじ電車のおなじ車両に乗る会社員",
+            "直せないものはないと言い張る町の電器屋",
+            "手紙の代筆を引き受ける古書店の店番",
+            "人の顔色ばかり読んでしまう転校生"
+        ],
+        stage: [
+            "再開発が決まった駅前の商店街",
+            "終電を逃した客しか来ない深夜のファミレス",
+            "冬になると人の消える海沿いの民宿",
+            "もう誰も泳がない学校の屋上プール",
+            "廃線が決まったローカル線の無人駅",
+            "卒業生が誰も帰ってこない山あいの分校",
+            "閉店まであと一週間の、五十年続いた銭湯",
+            "台風で三日だけ孤立した島",
+            "取り壊し前夜の古い団地",
+            "朝の二時間しか開かない小さな図書室",
+            "コインランドリーだけが明かりを灯す住宅街",
+            "引き取り手のない荷物が並ぶ遺失物センター",
+            "誰も勝てないと評判の将棋教室",
+            "開店から閉店まで雨が降り続いた喫茶店"
+        ],
+        event: [
+            "十年前に別れた相手から、一通の手紙が届く",
+            "自分そっくりの人物が写った古い写真が出てくる",
+            "毎晩おなじ時刻に、知らない番号から電話が鳴る",
+            "隣の部屋の住人が、置き手紙だけを残して消える",
+            "落とし物として届いた鍵が、自宅の鍵とおなじ形をしている",
+            "亡くなった祖母の日記に、知らない家族の名前が並んでいる",
+            "頼んでいない花束が、毎週おなじ曜日に届きはじめる",
+            "十年後に開けるはずのタイムカプセルに、掘り返された跡がある",
+            "常連客がある日を境に、ひとりも来なくなる",
+            "自分の名前で予約された席に、見知らぬ客が座っている",
+            "消したはずの留守番電話が、なぜか戻ってくる",
+            "通帳に、心当たりのない入金が毎月続いていたと気づく",
+            "二十年ぶりの同窓会の案内が、宛名だけ旧姓で届く",
+            "財布の中に、行ったことのない街の切符が入っている"
+        ],
+        twist: [
+            "しかし、そのことを誰かに話すことだけは、どうしてもできない",
+            "ただし、本当のことを知っているのは、もう口をきけない相手だけだ",
+            "調べるほどに、間違っていたのは自分の記憶のほうだとわかってくる",
+            "しかも、期限はきっかり三日しかない",
+            "打ち明けようとするたび、相手はさりげなく話題を変えてしまう",
+            "気づけば、おなじことを繰り返している人間がもうひとりいる",
+            "だが、確かめるには、誰にも言えない嘘をひとつつく必要がある",
+            "手がかりは、いちばん捨てたかった過去の中にある",
+            "しかし事実を明かせば、大切な誰かの居場所がなくなる",
+            "相手はもう、こちらのことを覚えていない",
+            "一度だけ、見なかったことにできる機会が与えられる",
+            "けれど、それを許してしまったら、自分の二十年が嘘になる",
+            "その日に限って、誰もが少しずつ本当のことを言っていない",
+            "引き受けてしまえば、明日からの暮らしがすべて変わる"
+        ],
+        goal: [
+            "たったひとりで、確かめに行くことを決める",
+            "嘘をひとつだけ残したまま、答えを選ぶ",
+            "もう一度だけ、あの人に会いに行く",
+            "最後の一日を、いつも通りに過ごそうとする",
+            "誰にも言わないまま、間違いを直しはじめる",
+            "自分の言葉で、はじめて「さよなら」を言う",
+            "失くしたものの代わりを探すのを、やめる",
+            "打ち明ける相手を、たったひとりだけ選ぶ",
+            "帰る場所を、自分の手で作り直す",
+            "引き受けなくてもよかった約束を、引き受ける",
+            "十年ぶんの返事を、はがき一枚に書く",
+            "逃げるための切符を、破り捨てる",
+            "誰かの秘密を、そのまま抱えて生きることにする",
+            "最後にもう一度だけ、あの場所の灯りをつける"
+        ],
+        keyword: [
+            "忘れ物", "最終電車", "合鍵", "雨上がりの匂い", "定食屋の日替わり",
+            "留守番電話", "卒業アルバム", "引っ越しの前の日", "点滅したままの信号",
+            "サイズの合わない靴", "消えた常連客", "名前の書かれた傘", "母の口癖",
+            "締め切りの前夜", "夜勤明けの朝", "借りたままの本", "一本だけ残った蛍光灯",
+            "写真に写り込んだ他人"
+        ]
+    },
+    fantasy: {
+        label: "ファンタジー",
+        hero: [
+            "魔法をひとつだけ失った宮廷魔術師",
+            "神さまの忘れ物を届けて回る配達人",
+            "嘘をつけない呪いをかけられた盗賊",
+            "最後のドラゴンの世話係",
+            "死者の夢に潜って掃除をする少年",
+            "月の満ち欠けで姿の変わる薬師",
+            "名前を売り買いする市場の商人",
+            "世界でただひとり地図を描けない地図職人",
+            "雨を降らせる代わりに記憶を差し出す巫女",
+            "千年眠って目覚めた、役目のない守護獣",
+            "星をひとつだけ落とす権利を持つ見習い天文官",
+            "言葉を食べて生きる小さな竜",
+            "灯台守として雇われた元・海の魔物",
+            "時計を直すたび一日ぶん若返る職人"
+        ],
+        stage: [
+            "雲の上に浮かぶ、忘れられた図書館都市",
+            "百年に一度しか潮の引かない海底の街",
+            "逆さまに生えた森の底に沈んだ村",
+            "夜のあいだだけ現れる、地図に載らない停車場",
+            "神さまが引っ越したあとの、空っぽの社",
+            "季節が三つしかない王国",
+            "落ちてきた星の破片でできた町",
+            "死者が一年に一度だけ客として訪れる宿",
+            "誰も出口を覚えていない迷宮の、入口にできた商店街",
+            "鯨の背に乗って旅をする移動都市",
+            "音を立てると崩れてしまう硝子の谷",
+            "魔法の値段が日ごとに上がる交易港",
+            "最後の一本になった世界樹の根元",
+            "影が持ち主から独立して暮らす街"
+        ],
+        event: [
+            "地図にない星が、空にひとつ増える",
+            "百年ぶりに、封じられた扉がひとりでに開く",
+            "空から降ってきた手紙に、自分の名前が書かれている",
+            "誰も死ななくなった代わりに、誰も眠れなくなる",
+            "街じゅうの影が、いっせいにおなじ方角を指す",
+            "売れ残っていた名前が、ひとつだけ買い手を選ぶ",
+            "明日の日付の新聞が、今日のうちに届く",
+            "眠っていた守護獣が、間違った季節に目を覚ます",
+            "世界から色がひとつ、静かに消える",
+            "涸れた井戸の底から、聞き覚えのある子守唄が聞こえてくる",
+            "魔法の値段が、ある朝とつぜん無料になる",
+            "使われなくなった神さまが、路地裏で職を探しはじめる",
+            "海と空が、三日だけ入れ替わる",
+            "すべての鏡が、実際より少しだけ幸せな姿を映しはじめる"
+        ],
+        twist: [
+            "ただし、その力を使うたびに大切な記憶をひとつ失う",
+            "しかし、それを知っているのは、もう人ではなくなった者だけだ",
+            "代償を払えるのは、この世でいちばん嘘の下手な人間だけだった",
+            "けれど扉の向こうには、おなじ顔をした自分が立っている",
+            "引き換えに差し出すのは、いちばん幸せだった日の記憶だ",
+            "しかも、猶予は月が満ちるまでの七日しかない",
+            "願いを叶えるには、誰かの願いをひとつ取り消さねばならない",
+            "だが、それを止めれば、この街の季節は二度と巡らない",
+            "助けを求められる相手は、かつて自分が裏切った者だけだ",
+            "その予言は、まだ誰も生まれていない時代に書かれていた",
+            "選べる道はふたつ、どちらを選んでも誰かがいなくなる",
+            "ただし真名を口にした瞬間、自分の存在が世界から消える",
+            "奇跡は一度きり、しかも使い道は自分では決められない",
+            "世界を救う方法は、世界がそれを忘れることだった"
+        ],
+        goal: [
+            "世界にひとつだけ残った願いを、誰かのために使う",
+            "失う記憶の順番を、自分で選びはじめる",
+            "もう帰れないと知りながら、扉をくぐる",
+            "神さまのいない街で、祭りを続ける方法をさがす",
+            "物語の最後の一行を書き足すために、旅に出る",
+            "名前を取り戻す代わりに、居場所を手放す",
+            "敵になるはずだった相手と、おなじ船に乗る",
+            "予言を、たった一文字だけ書き換える",
+            "千年ぶんの借りを、一日で返そうとする",
+            "世界の終わりの日に、ふつうの朝ごはんを作る",
+            "いちばん弱い魔法だけで、最後まで戦う",
+            "消える前に、たったひとりに自分を覚えてもらおうとする",
+            "空へ還る鯨を、一頭だけ引き止める",
+            "誰にも読まれない手紙を、それでも書き続ける"
+        ],
+        keyword: [
+            "月の欠片", "名前を食べる獣", "逆さの塔", "七日だけの春", "翼の修理屋",
+            "忘れられた神さま", "空を泳ぐ鯨", "値札のついた奇跡", "影の市場",
+            "眠らない灯台", "星の落とし物", "鍵のかかった季節", "竜の抜け殻",
+            "地図にない駅", "売り物になった寿命", "終わらない冬の番人"
+        ]
+    }
+};
+
+/* 縛り (共通) */
+var RULES = [
+    "一人称で書く",
+    "三人称で書く",
+    "会話文だけで書く",
+    "情景描写から書きはじめる",
+    "最後の一行を先に決めて書く",
+    "800文字以内でまとめる",
+    "時系列を逆から描く",
+    "登場人物は二人だけ",
+    "「悲しい」「嬉しい」を使わない",
+    "登場人物を一歩も動かさない",
+    "一日のうちの出来事だけで書く",
+    "雨の音をどこかに入れる",
+    "台詞は三つまで",
+    "説明をせずに状況だけで伝える",
+    "最後に必ず食べ物を出す",
+    "手紙か日記の形式で書く"
+];
+
+/* 読後感 (共通) */
+var MOODS = [
+    "せつなさ", "静かな希望", "後味の悪さ", "小さな笑い", "胸のざわつき",
+    "ほろ苦い和解", "こわさのあとの安心", "やさしい別れ", "淡い恋の気配",
+    "取り返しのつかなさ", "生活のにおい", "ふしぎな明るさ"
+];
+
+/* お題の文型 */
+var THEME_TEMPLATES = [
+    function (a, b) { return "「" + a + "」と「" + b + "」。\nこのふたつを結びつけて一本書く。"; },
+    function (a, b) { return "「" + a + "」から始まり、「" + b + "」で終わる話。"; },
+    function (a, b) { return "「" + a + "」をめぐって、ふたりの人物がすれ違う話。"; },
+    function (a, b) { return "「" + a + "」というタイトルで書く。\n本文には「" + b + "」を必ず登場させること。"; },
+    function (a, b) { return "「" + a + "」を、誰かに手放さなければならなくなる話。\n鍵になるのは「" + b + "」。"; },
+    function (a, b) { return "「" + a + "」が、その日だけ特別な意味を持つ。\n締めくくりに「" + b + "」を置く。"; },
+    function (a, b) { return "「" + a + "」を探している人物と、「" + b + "」を隠している人物の話。"; }
+];
+
+/* あらすじの文型 */
+var STORY_TEMPLATES = [
+    function (p) {
+        return p.stage + "。\nその片隅にいる" + p.hero + "のもとに、ある日、" + p.event + "。\n"
+            + p.twist + "。\nやがてその人は、" + p.goal + "。";
+    },
+    function (p) {
+        return p.hero + "が、" + p.stage + "に流れ着く。\n" + p.event + "のは、その翌日のことだった。\n"
+            + p.twist + "。\nそれでも" + p.goal + "——そこから物語が始まる。";
+    },
+    function (p) {
+        return "舞台は" + p.stage + "。主人公は" + p.hero + "。\nある日、" + p.event + "。\n"
+            + p.twist + "。\n" + p.goal + "——そんな一本。";
+    },
+    function (p) {
+        return "ある日、" + p.event + "。\nそれが起きたのは" + p.stage + "、\n"
+            + "受け取ったのは" + p.hero + "だった。\n" + p.twist + "。\nそして最後に、" + p.goal + "。";
+    }
+];
+
+/* =====================================================
+   ランダム補助
+===================================================== */
+function pick(list) {
+    return list[Math.floor(Math.random() * list.length)];
+}
+/*
+   同じ要素を引かずに2つ取り出す
+*/
+function pickTwo(list) {
+    var a = pick(list);
+    var b = pick(list);
+    var guard = 0;
+    while (b === a && list.length > 1 && guard < 20) {
+        b = pick(list);
+        guard++;
+    }
+    return [a, b];
+}
+
+/* =====================================================
+   お題 / あらすじの生成
+===================================================== */
+var INTERVAL_MS = 30000;
+var state = {
+    genre: "any",
+    type: "any",
+    current: null,
+    paused: false,
+    startedAt: 0,
+    remain: INTERVAL_MS,
+    recent: []
+};
+
+function resolveGenre() {
+    if (state.genre === "any") {
+        return Math.random() < 0.5 ? "real" : "fantasy";
+    }
+    return state.genre;
+}
+function resolveType() {
+    if (state.type === "any") {
+        return Math.random() < 0.5 ? "theme" : "story";
+    }
+    return state.type;
+}
+
+function buildOne() {
+    var genreKey = resolveGenre();
+    var typeKey = resolveType();
+    var d = DATA[genreKey];
+    var text;
+
+    if (typeKey === "theme") {
+        var kw = pickTwo(d.keyword);
+        text = pick(THEME_TEMPLATES)(kw[0], kw[1]);
+    } else {
+        text = pick(STORY_TEMPLATES)({
+            stage: pick(d.stage),
+            hero: pick(d.hero),
+            event: pick(d.event),
+            twist: pick(d.twist),
+            goal: pick(d.goal)
+        });
+    }
+    return {
+        genre: genreKey,
+        genreLabel: d.label,
+        type: typeKey,
+        typeLabel: typeKey === "theme" ? "お題" : "あらすじ",
+        text: text,
+        rule: pick(RULES),
+        mood: pick(MOODS)
+    };
+}
+
+/*
+   直近と重複しないように生成する
+*/
+function generate() {
+    var item = buildOne();
+    var guard = 0;
+    while (state.recent.indexOf(item.text) !== -1 && guard < 30) {
+        item = buildOne();
+        guard++;
+    }
+    state.recent.push(item.text);
+    if (state.recent.length > 12) {
+        state.recent.shift();
+    }
+    return item;
+}
+
+/* =====================================================
+   描画
+===================================================== */
+var elBadges = document.getElementById("badges");
+var elText = document.getElementById("prompt-text");
+var elChips = document.getElementById("chips");
+
+function render(item) {
+    elBadges.innerHTML = "";
+
+    var g = document.createElement("span");
+    g.className = "badge " + (item.genre === "real" ? "genre-real" : "genre-fantasy");
+    g.textContent = item.genreLabel;
+    elBadges.appendChild(g);
+
+    var t = document.createElement("span");
+    t.className = "badge";
+    t.textContent = item.typeLabel;
+    elBadges.appendChild(t);
+
+    elText.textContent = item.text;
+    elText.classList.remove("fade");
+    /* アニメーションを再生し直す */
+    void elText.offsetWidth;
+    elText.classList.add("fade");
+
+    elChips.innerHTML = "";
+    elChips.appendChild(makeChip("縛り", item.rule));
+    elChips.appendChild(makeChip("読後感", item.mood));
+}
+
+function makeChip(label, value) {
+    var chip = document.createElement("span");
+    chip.className = "chip";
+    var b = document.createElement("b");
+    b.textContent = label;
+    chip.appendChild(b);
+    chip.appendChild(document.createTextNode(value));
+    return chip;
+}
+
+/*
+   コピー用のテキスト
+*/
+function toPlainText(item) {
+    return "【" + item.genreLabel + " / " + item.typeLabel + "】\n"
+        + item.text + "\n"
+        + "縛り: " + item.rule + " / 読後感: " + item.mood;
+}
+
+/* =====================================================
+   タイマー
+===================================================== */
+var elTimer = document.getElementById("timer");
+var elFill = document.getElementById("timer-fill");
+var elLabel = document.getElementById("timer-label");
+
+function nextPrompt() {
+    state.current = generate();
+    render(state.current);
+    state.startedAt = Date.now();
+    state.remain = INTERVAL_MS;
+    updateTimer();
+}
+
+function updateTimer() {
+    var left = state.paused
+        ? state.remain
+        : Math.max(0, INTERVAL_MS - (Date.now() - state.startedAt));
+    var ratio = 1 - left / INTERVAL_MS;
+    elFill.style.width = (ratio * 100).toFixed(1) + "%";
+    elLabel.textContent = state.paused
+        ? "一時停止中 (残り " + Math.ceil(left / 1000) + " 秒)"
+        : "次のお題まで " + Math.ceil(left / 1000) + " 秒";
+}
+
+/*
+   30秒たったら自動で次へ
+*/
+function tick() {
+    if (!state.paused && Date.now() - state.startedAt >= INTERVAL_MS) {
+        nextPrompt();
+    } else {
+        updateTimer();
+    }
+    requestAnimationFrame(tick);
+}
+
+function setPaused(paused) {
+    if (paused === state.paused) {
+        return;
+    }
+    if (paused) {
+        state.remain = Math.max(0, INTERVAL_MS - (Date.now() - state.startedAt));
+    } else {
+        state.startedAt = Date.now() - (INTERVAL_MS - state.remain);
+    }
+    state.paused = paused;
+    elTimer.classList.toggle("paused", paused);
+    document.getElementById("pause-label").textContent = paused ? "再開" : "一時停止";
+    updateTimer();
+}
+
+/* =====================================================
+   保存 (localStorage)
+===================================================== */
+var STORE_KEY = "creative-prompt-saved";
+var saved = [];
+
+function loadSaved() {
+    try {
+        var raw = localStorage.getItem(STORE_KEY);
+        saved = raw ? JSON.parse(raw) : [];
+        if (!(saved instanceof Array)) {
+            saved = [];
+        }
+    } catch (e) {
+        saved = [];
+    }
+}
+function persist() {
+    try {
+        localStorage.setItem(STORE_KEY, JSON.stringify(saved));
+    } catch (e) {
+        toast("保存できませんでした");
+    }
+}
+
+var elSavedList = document.getElementById("saved-list");
+var elSavedCount = document.getElementById("saved-count");
+
+function renderSaved() {
+    elSavedList.innerHTML = "";
+    elSavedCount.textContent = saved.length ? "(" + saved.length + ")" : "";
+
+    if (!saved.length) {
+        var empty = document.createElement("div");
+        empty.className = "saved-empty";
+        empty.textContent = "まだありません。気に入ったお題は★で保存できます。";
+        elSavedList.appendChild(empty);
+        return;
+    }
+
+    saved.forEach(function (item, index) {
+        var box = document.createElement("div");
+        box.className = "saved-item";
+
+        var text = document.createElement("div");
+        text.className = "saved-item-text";
+        text.textContent = toPlainText(item);
+        box.appendChild(text);
+
+        var foot = document.createElement("div");
+        foot.className = "saved-item-foot";
+
+        var copyBtn = document.createElement("button");
+        copyBtn.className = "text-button";
+        copyBtn.textContent = "コピー";
+        copyBtn.addEventListener("click", function () {
+            copyText(toPlainText(item));
+        });
+        foot.appendChild(copyBtn);
+
+        var delBtn = document.createElement("button");
+        delBtn.className = "text-button";
+        delBtn.textContent = "削除";
+        delBtn.addEventListener("click", function () {
+            saved.splice(index, 1);
+            persist();
+            renderSaved();
+        });
+        foot.appendChild(delBtn);
+
+        box.appendChild(foot);
+        elSavedList.appendChild(box);
+    });
+}
+
+/* =====================================================
+   クリップボード
+===================================================== */
+function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () {
+            toast("コピーしました");
+        }, function () {
+            fallbackCopy(text);
+        });
+    } else {
+        fallbackCopy(text);
+    }
+}
+/*
+   clipboard API が使えない環境向け
+*/
+function fallbackCopy(text) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand("copy");
+        toast("コピーしました");
+    } catch (e) {
+        toast("コピーできませんでした");
+    }
+    document.body.removeChild(ta);
+}
+
+/* =====================================================
+   トースト
+===================================================== */
+var elToast = document.getElementById("toast");
+var toastTimer = null;
+
+function toast(message) {
+    elToast.textContent = message;
+    elToast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+        elToast.classList.remove("show");
+    }, 1600);
+}
+
+/* =====================================================
+   イベント
+===================================================== */
+document.getElementById("btn-next").addEventListener("click", function () {
+    nextPrompt();
+});
+document.getElementById("btn-pause").addEventListener("click", function () {
+    setPaused(!state.paused);
+});
+document.getElementById("btn-save").addEventListener("click", function () {
+    if (!state.current) {
+        return;
+    }
+    saved.unshift(state.current);
+    if (saved.length > 100) {
+        saved.pop();
+    }
+    persist();
+    renderSaved();
+    toast("保存しました");
+});
+document.getElementById("btn-copy").addEventListener("click", function () {
+    if (state.current) {
+        copyText(toPlainText(state.current));
+    }
+});
+document.getElementById("btn-copy-all").addEventListener("click", function () {
+    if (!saved.length) {
+        toast("保存されたお題がありません");
+        return;
+    }
+    copyText(saved.map(toPlainText).join("\n\n"));
+});
+document.getElementById("btn-clear").addEventListener("click", function () {
+    if (!saved.length) {
+        return;
+    }
+    if (window.confirm("保存したお題をすべて消去します。よろしいですか?")) {
+        saved = [];
+        persist();
+        renderSaved();
+    }
+});
+
+/*
+   セグメント (ジャンル / 形式)
+*/
+function bindSegment(id, key) {
+    var seg = document.getElementById(id);
+    seg.addEventListener("click", function (e) {
+        var btn = e.target.closest("button");
+        if (!btn) {
+            return;
+        }
+        Array.prototype.forEach.call(seg.querySelectorAll("button"), function (b) {
+            b.classList.remove("active");
+        });
+        btn.classList.add("active");
+        state[key] = btn.getAttribute(key === "genre" ? "data-genre" : "data-type");
+        nextPrompt();
+    });
+}
+bindSegment("genre-seg", "genre");
+bindSegment("type-seg", "type");
+
+/*
+   キーボード操作
+*/
+document.addEventListener("keydown", function (e) {
+    if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        setPaused(!state.paused);
+    } else if (e.key === "ArrowRight") {
+        nextPrompt();
+    }
+});
+
+/* =====================================================
+   起動
+===================================================== */
+loadSaved();
+renderSaved();
+nextPrompt();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
