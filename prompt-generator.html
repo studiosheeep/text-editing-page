@@ -37,15 +37,15 @@ body {
 ===================================================== */
 .app {
     width: 100%;
-    max-width: 720px;
+    max-width: 640px;
     margin: 0 auto;
-    padding: 0 14px 40px;
+    padding: 0 14px 60px;
 }
 /* =====================================================
    ヘッダー
 ===================================================== */
 .header {
-    padding: 18px 2px 12px;
+    padding: 18px 2px 10px;
 }
 .header-title {
     font-size: 20px;
@@ -57,13 +57,27 @@ body {
     color: #777;
 }
 /* =====================================================
-   設定行 (ジャンル / 形式)
+   上部に貼り付く操作バー
 ===================================================== */
+.composer {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(245, 245, 247, 0.93);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    padding: 8px 0 10px;
+    margin-bottom: 10px;
+}
+/*
+   生成設定 (ジャンル / 形式)
+*/
 .settings {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 12px;
+    gap: 8px;
+    margin-bottom: 8px;
 }
 .segment {
     display: flex;
@@ -89,101 +103,12 @@ body {
     font-weight: bold;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
-/* =====================================================
-   お題カード
-===================================================== */
-.card {
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 14px;
-    padding: 18px 16px 16px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    min-height: 260px;
-    display: flex;
-    flex-direction: column;
-}
 /*
-   カード上部のバッジ
-*/
-.badges {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 12px;
-}
-.badge {
-    font-size: 11px;
-    padding: 3px 9px;
-    border-radius: 999px;
-    border: 1px solid #ddd;
-    color: #555;
-    background: #fafafa;
-}
-.badge.genre-real {
-    background: #eef3ff;
-    border-color: #ccd9f5;
-    color: #3a5a9b;
-}
-.badge.genre-fantasy {
-    background: #f5eefb;
-    border-color: #e0cdf0;
-    color: #75439b;
-}
-/*
-   本文
-*/
-.prompt-text {
-    flex: 1;
-    font-size: 17px;
-    line-height: 1.9;
-    white-space: pre-wrap;
-    word-break: normal;
-    overflow-wrap: anywhere;
-}
-.prompt-text.fade {
-    animation: fadein 0.45s ease;
-}
-@keyframes fadein {
-    from {
-        opacity: 0;
-        transform: translateY(6px);
-    }
-    to {
-        opacity: 1;
-        transform: none;
-    }
-}
-/*
-   縛り・読後感
-*/
-.chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: 1px dashed #e2e2e4;
-}
-.chip {
-    font-size: 12px;
-    color: #555;
-    background: #f2f2f4;
-    border-radius: 7px;
-    padding: 5px 9px;
-}
-.chip b {
-    color: #888;
-    font-weight: normal;
-    margin-right: 4px;
-}
-/* =====================================================
    タイマー
-===================================================== */
-.timer {
-    margin-top: 12px;
-}
+*/
 .timer-bar {
     width: 100%;
-    height: 5px;
+    height: 4px;
     background: #e3e3e6;
     border-radius: 999px;
     overflow: hidden;
@@ -194,67 +119,63 @@ body {
     background: #4a7ad6;
     border-radius: 999px;
 }
-.timer-label {
-    margin-top: 6px;
-    font-size: 12px;
-    color: #888;
-    text-align: right;
-}
 .timer.paused .timer-fill {
     background: #bbb;
 }
-/* =====================================================
-   操作ボタン
-===================================================== */
-.actions {
+.timer-row {
     display: flex;
+    align-items: center;
     gap: 8px;
-    margin-top: 14px;
+    margin-top: 8px;
 }
-.action-button {
+.timer-label {
     flex: 1;
-    min-height: 46px;
+    font-size: 12px;
+    color: #888;
+}
+/*
+   操作ボタン
+*/
+.bar-button {
     border: 1px solid #ddd;
     background: #ffffff;
-    border-radius: 10px;
+    border-radius: 999px;
     font-size: 13px;
     font-family: inherit;
     color: #333;
     cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
+    padding: 8px 14px;
+    white-space: nowrap;
 }
-.action-button:active {
+.bar-button:active {
     background: #eeeeF3;
 }
-.action-icon {
-    font-size: 18px;
-    line-height: 1;
-}
-.action-button.primary {
+.bar-button.primary {
     background: #4a7ad6;
     border-color: #4a7ad6;
     color: #ffffff;
+    font-weight: bold;
 }
 /* =====================================================
-   保存リスト
+   フィードの見出し
 ===================================================== */
-.saved {
-    margin-top: 26px;
-}
-.saved-head {
+.feed-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
     margin-bottom: 8px;
 }
-.saved-title {
-    font-size: 14px;
-    font-weight: bold;
-    color: #444;
+.feed-count {
+    flex: 1;
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+}
+.feed-head-buttons {
+    display: flex;
+    gap: 2px;
+    margin-left: auto;
 }
 .text-button {
     border: none;
@@ -265,28 +186,177 @@ body {
     cursor: pointer;
     padding: 4px;
 }
-.saved-empty {
-    font-size: 12px;
-    color: #999;
-    padding: 10px 2px;
-}
-.saved-item {
+/* =====================================================
+   タイムライン
+===================================================== */
+.feed {
     background: #ffffff;
-    border: 1px solid #e2e2e4;
-    border-radius: 10px;
-    padding: 12px;
-    margin-bottom: 8px;
+    border: 1px solid #ddd;
+    border-radius: 14px;
+    overflow: hidden;
 }
-.saved-item-text {
-    font-size: 13px;
-    line-height: 1.8;
-    white-space: pre-wrap;
-}
-.saved-item-foot {
+/*
+   カード1枚
+*/
+.post {
     display: flex;
+    gap: 10px;
+    padding: 14px;
+    border-bottom: 1px solid #eeeef0;
+}
+.post:last-child {
+    border-bottom: none;
+}
+.post.latest {
+    background: #fafbff;
+}
+/*
+   出てきた瞬間のアニメーション
+*/
+.post.enter {
+    animation: postin 0.45s ease;
+}
+@keyframes postin {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+/*
+   アイコン
+*/
+.avatar {
+    flex: 0 0 42px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #eef3ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 21px;
+    line-height: 1;
+}
+.avatar.fantasy {
+    background: #f5eefb;
+}
+/*
+   本文まわり
+*/
+.post-main {
+    flex: 1;
+    min-width: 0;
+}
+.post-head {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    font-size: 13px;
+}
+.post-name {
+    font-weight: bold;
+}
+.post-handle,
+.post-time {
+    color: #8a8a8f;
+    font-size: 12px;
+}
+.post-badge {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid #ddd;
+    background: #fafafa;
+    color: #555;
+}
+.post-badge.genre-real {
+    background: #eef3ff;
+    border-color: #ccd9f5;
+    color: #3a5a9b;
+}
+.post-badge.genre-fantasy {
+    background: #f5eefb;
+    border-color: #e0cdf0;
+    color: #75439b;
+}
+.post-body {
+    margin-top: 5px;
+    font-size: 15px;
+    line-height: 1.85;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+/*
+   縛り・読後感
+*/
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+.chip {
+    font-size: 12px;
+    color: #555;
+    background: #f2f2f4;
+    border-radius: 7px;
+    padding: 4px 9px;
+}
+.chip b {
+    color: #999;
+    font-weight: normal;
+    margin-right: 4px;
+}
+/*
+   カード下部の操作
+*/
+.post-actions {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+}
+.post-action {
+    border: none;
+    background: none;
+    padding: 2px 0;
+    font-size: 12px;
+    font-family: inherit;
+    color: #8a8a8f;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
     gap: 4px;
-    justify-content: flex-end;
-    margin-top: 6px;
+}
+.post-action:active {
+    opacity: 0.6;
+}
+.post-action.liked {
+    color: #d3455b;
+}
+/*
+   さらに表示 / 空表示
+*/
+.feed-more {
+    width: 100%;
+    border: none;
+    border-top: 1px solid #eeeef0;
+    background: #ffffff;
+    color: #4a7ad6;
+    font-family: inherit;
+    font-size: 13px;
+    padding: 14px;
+    cursor: pointer;
+}
+.feed-empty {
+    padding: 22px 14px;
+    font-size: 13px;
+    color: #999;
+    text-align: center;
 }
 /* =====================================================
    トースト
@@ -304,6 +374,7 @@ body {
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s, transform 0.2s;
+    z-index: 50;
 }
 .toast.show {
     opacity: 1;
@@ -324,84 +395,56 @@ body {
 <div class="app">
     <div class="header">
         <div class="header-title">創作お題ジェネレーター</div>
-        <div class="header-sub">30秒ごとに、お題かあらすじがひとつ生まれます。</div>
+        <div class="header-sub">30秒ごとにお題が流れてきます。新しいものが上に積まれます。</div>
     </div>
 
-    <!-- 設定 -->
-    <div class="settings">
-        <div class="segment" id="genre-seg">
-            <button data-genre="any" class="active">おまかせ</button>
-            <button data-genre="real">現実</button>
-            <button data-genre="fantasy">ファンタジー</button>
-        </div>
-        <div class="segment" id="type-seg">
-            <button data-type="any" class="active">両方</button>
-            <button data-type="theme">お題</button>
-            <button data-type="story">あらすじ</button>
-        </div>
-    </div>
-
-    <!-- お題カード -->
-    <div class="card">
-        <div class="badges" id="badges"></div>
-        <div class="prompt-text" id="prompt-text">読み込み中…</div>
-        <div class="chips" id="chips"></div>
-    </div>
-
-    <!-- タイマー -->
-    <div class="timer" id="timer">
-        <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
-        <div class="timer-label" id="timer-label">次のお題まで 30 秒</div>
-    </div>
-
-    <!-- 操作 -->
-    <div class="actions">
-        <button class="action-button primary" id="btn-next">
-            <span class="action-icon">🎲</span><span>次のお題</span>
-        </button>
-        <button class="action-button" id="btn-pause">
-            <span class="action-icon">⏸</span><span id="pause-label">一時停止</span>
-        </button>
-        <button class="action-button" id="btn-save">
-            <span class="action-icon">★</span><span>保存</span>
-        </button>
-        <button class="action-button" id="btn-copy">
-            <span class="action-icon">📋</span><span>コピー</span>
-        </button>
-    </div>
-
-    <!-- 保存したお題 -->
-    <div class="saved">
-        <div class="saved-head">
-            <div class="saved-title">保存したお題 <span id="saved-count"></span></div>
-            <div>
-                <button class="text-button" id="btn-copy-all">まとめてコピー</button>
-                <button class="text-button" id="btn-clear">全消去</button>
+    <!-- 上部操作バー -->
+    <div class="composer">
+        <div class="settings">
+            <div class="segment" id="genre-seg">
+                <button data-genre="any" class="active">おまかせ</button>
+                <button data-genre="real">現実</button>
+                <button data-genre="fantasy">ファンタジー</button>
+            </div>
+            <div class="segment" id="type-seg">
+                <button data-type="any" class="active">両方</button>
+                <button data-type="theme">お題</button>
+                <button data-type="story">あらすじ</button>
             </div>
         </div>
-        <div id="saved-list"></div>
+        <div class="timer" id="timer">
+            <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+            <div class="timer-row">
+                <div class="timer-label" id="timer-label">次のお題まで 30 秒</div>
+                <button class="bar-button" id="btn-pause">⏸ 一時停止</button>
+                <button class="bar-button primary" id="btn-next">🎲 いま出す</button>
+            </div>
+        </div>
     </div>
 
+    <!-- フィード -->
+    <div class="feed-head">
+        <div class="feed-count" id="feed-count"></div>
+        <div class="segment" id="filter-seg">
+            <button data-filter="all" class="active">すべて</button>
+            <button data-filter="liked">★のみ</button>
+        </div>
+        <div class="feed-head-buttons">
+            <button class="text-button" id="btn-copy-all">まとめてコピー</button>
+            <button class="text-button" id="btn-clear">全消去</button>
+        </div>
+    </div>
+    <div class="feed" id="feed"></div>
+
     <div class="note">
-        ・キーボード: スペースで一時停止 / → で次のお題<br>
-        ・保存したお題はこのブラウザ内(localStorage)にだけ残ります。
+        ・出てきたお題は自動でカード保存されます (このブラウザ内 localStorage、保存できる限り保持)<br>
+        ・キーボード: スペースで一時停止 / → で次のお題
     </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-/* =====================================================
-   語彙データ
-   ---------------------------------------------------
-   story: あらすじ生成用のパーツ
-     stage   … 舞台 (名詞句)
-     hero    … 主人公 (名詞句)
-     event   … 発端 (言い切りの節)
-     twist   … ひねり (接続詞込みの一文)
-     goal    … 主人公の選択 (終止形の節)
-   theme: お題生成用のキーワード
-===================================================== */
 var DATA = {
     real: {
         label: "現実",
@@ -663,19 +706,28 @@ function pickTwo(list) {
 }
 
 /* =====================================================
-   お題 / あらすじの生成
+   状態
 ===================================================== */
 var INTERVAL_MS = 30000;
+var PAGE_SIZE = 60;      /* 一度に表示するカード数 */
+var MAX_ITEMS = 2000;    /* 保持するカードの上限 */
+
 var state = {
     genre: "any",
     type: "any",
-    current: null,
+    filter: "all",
     paused: false,
     startedAt: 0,
     remain: INTERVAL_MS,
-    recent: []
+    shown: PAGE_SIZE
 };
 
+/* 新しい順に並んだカード配列 */
+var feed = [];
+
+/* =====================================================
+   お題 / あらすじの生成
+===================================================== */
 function resolveGenre() {
     if (state.genre === "any") {
         return Math.random() < 0.5 ? "real" : "fantasy";
@@ -708,62 +760,166 @@ function buildOne() {
         });
     }
     return {
+        id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 8),
         genre: genreKey,
-        genreLabel: d.label,
         type: typeKey,
-        typeLabel: typeKey === "theme" ? "お題" : "あらすじ",
         text: text,
         rule: pick(RULES),
-        mood: pick(MOODS)
+        mood: pick(MOODS),
+        at: Date.now(),
+        liked: false
     };
 }
 
 /*
-   直近と重複しないように生成する
+   直近のカードと重複しないように生成する
 */
 function generate() {
+    var recent = feed.slice(0, 12).map(function (item) {
+        return item.text;
+    });
     var item = buildOne();
     var guard = 0;
-    while (state.recent.indexOf(item.text) !== -1 && guard < 30) {
+    while (recent.indexOf(item.text) !== -1 && guard < 30) {
         item = buildOne();
         guard++;
-    }
-    state.recent.push(item.text);
-    if (state.recent.length > 12) {
-        state.recent.shift();
     }
     return item;
 }
 
+function genreLabel(item) {
+    return DATA[item.genre] ? DATA[item.genre].label : "";
+}
+function typeLabel(item) {
+    return item.type === "theme" ? "お題" : "あらすじ";
+}
+function toPlainText(item) {
+    return "【" + genreLabel(item) + " / " + typeLabel(item) + "】\n"
+        + item.text + "\n"
+        + "縛り: " + item.rule + " / 読後感: " + item.mood;
+}
+
 /* =====================================================
-   描画
+   保存 (localStorage)
+   ---------------------------------------------------
+   容量いっぱいまで保持し、書き込めなくなったら
+   古いカードから順に捨てて入るところまで残す。
 ===================================================== */
-var elBadges = document.getElementById("badges");
-var elText = document.getElementById("prompt-text");
-var elChips = document.getElementById("chips");
+var STORE_KEY = "creative-prompt-feed";
+var OLD_STORE_KEY = "creative-prompt-saved";
 
-function render(item) {
-    elBadges.innerHTML = "";
+function loadFeed() {
+    var raw = null;
+    try {
+        raw = localStorage.getItem(STORE_KEY);
+    } catch (e) {
+        raw = null;
+    }
+    if (raw) {
+        try {
+            var parsed = JSON.parse(raw);
+            if (parsed instanceof Array) {
+                feed = parsed.filter(function (item) {
+                    return item && typeof item.text === "string";
+                });
+            }
+        } catch (e) {
+            feed = [];
+        }
+        return;
+    }
+    /* 旧バージョンで★保存したお題を引き継ぐ */
+    try {
+        var old = JSON.parse(localStorage.getItem(OLD_STORE_KEY) || "[]");
+        if (old instanceof Array) {
+            feed = old.map(function (item, index) {
+                return {
+                    id: "legacy-" + index,
+                    genre: item.genre === "fantasy" ? "fantasy" : "real",
+                    type: item.type === "story" ? "story" : "theme",
+                    text: String(item.text || ""),
+                    rule: String(item.rule || ""),
+                    mood: String(item.mood || ""),
+                    at: 0,
+                    liked: true
+                };
+            }).filter(function (item) {
+                return item.text;
+            });
+        }
+    } catch (e) {
+        feed = [];
+    }
+}
 
-    var g = document.createElement("span");
-    g.className = "badge " + (item.genre === "real" ? "genre-real" : "genre-fantasy");
-    g.textContent = item.genreLabel;
-    elBadges.appendChild(g);
+/*
+   直前の persist() でカードを間引いたか
+   (間引いた場合は画面を作り直す必要がある)
+*/
+var lastPersistTrimmed = false;
 
-    var t = document.createElement("span");
-    t.className = "badge";
-    t.textContent = item.typeLabel;
-    elBadges.appendChild(t);
+function persist() {
+    lastPersistTrimmed = false;
+    if (feed.length > MAX_ITEMS) {
+        feed.length = MAX_ITEMS;
+        lastPersistTrimmed = true;
+    }
+    for (var attempt = 0; attempt < 12; attempt++) {
+        try {
+            localStorage.setItem(STORE_KEY, JSON.stringify(feed));
+            if (lastPersistTrimmed) {
+                toast("保存できる上限に達したため、古いカードを整理しました");
+            }
+            return true;
+        } catch (e) {
+            /* 容量オーバー: 古いカードを1割ずつ捨てて再挑戦 */
+            if (feed.length <= 10) {
+                toast("これ以上は保存できませんでした");
+                lastPersistTrimmed = true;
+                return false;
+            }
+            feed.splice(feed.length - Math.max(5, Math.floor(feed.length * 0.1)));
+            lastPersistTrimmed = true;
+        }
+    }
+    toast("これ以上は保存できませんでした");
+    return false;
+}
 
-    elText.textContent = item.text;
-    elText.classList.remove("fade");
-    /* アニメーションを再生し直す */
-    void elText.offsetWidth;
-    elText.classList.add("fade");
+/* =====================================================
+   表示
+===================================================== */
+var elFeed = document.getElementById("feed");
+var elCount = document.getElementById("feed-count");
 
-    elChips.innerHTML = "";
-    elChips.appendChild(makeChip("縛り", item.rule));
-    elChips.appendChild(makeChip("読後感", item.mood));
+function visibleItems() {
+    if (state.filter === "liked") {
+        return feed.filter(function (item) {
+            return item.liked;
+        });
+    }
+    return feed;
+}
+
+/*
+   経過時間の表示 (X のタイムラインに近い表記)
+*/
+function timeLabel(at) {
+    if (!at) {
+        return "以前";
+    }
+    var diff = Date.now() - at;
+    if (diff < 60000) {
+        return "たった今";
+    }
+    if (diff < 3600000) {
+        return Math.floor(diff / 60000) + "分前";
+    }
+    if (diff < 86400000) {
+        return Math.floor(diff / 3600000) + "時間前";
+    }
+    var d = new Date(at);
+    return (d.getMonth() + 1) + "月" + d.getDate() + "日";
 }
 
 function makeChip(label, value) {
@@ -777,12 +933,208 @@ function makeChip(label, value) {
 }
 
 /*
-   コピー用のテキスト
+   カード1枚を組み立てる
 */
-function toPlainText(item) {
-    return "【" + item.genreLabel + " / " + item.typeLabel + "】\n"
-        + item.text + "\n"
-        + "縛り: " + item.rule + " / 読後感: " + item.mood;
+function makePost(item) {
+    var post = document.createElement("div");
+    post.className = "post";
+    post.setAttribute("data-id", item.id);
+
+    var avatar = document.createElement("div");
+    avatar.className = "avatar" + (item.genre === "fantasy" ? " fantasy" : "");
+    avatar.textContent = item.genre === "fantasy" ? "🐉" : "🌆";
+    post.appendChild(avatar);
+
+    var main = document.createElement("div");
+    main.className = "post-main";
+
+    /* 名前・時刻・バッジ */
+    var head = document.createElement("div");
+    head.className = "post-head";
+
+    var name = document.createElement("span");
+    name.className = "post-name";
+    name.textContent = "お題ジェネレーター";
+    head.appendChild(name);
+
+    var handle = document.createElement("span");
+    handle.className = "post-handle";
+    handle.textContent = "@odai";
+    head.appendChild(handle);
+
+    var dot = document.createElement("span");
+    dot.className = "post-handle";
+    dot.textContent = "·";
+    head.appendChild(dot);
+
+    var time = document.createElement("span");
+    time.className = "post-time";
+    time.setAttribute("data-at", String(item.at || 0));
+    time.textContent = timeLabel(item.at);
+    head.appendChild(time);
+
+    var gb = document.createElement("span");
+    gb.className = "post-badge " + (item.genre === "fantasy" ? "genre-fantasy" : "genre-real");
+    gb.textContent = genreLabel(item);
+    head.appendChild(gb);
+
+    var tb = document.createElement("span");
+    tb.className = "post-badge";
+    tb.textContent = typeLabel(item);
+    head.appendChild(tb);
+
+    main.appendChild(head);
+
+    /* 本文 */
+    var body = document.createElement("div");
+    body.className = "post-body";
+    body.textContent = item.text;
+    main.appendChild(body);
+
+    /* 縛り・読後感 */
+    var chips = document.createElement("div");
+    chips.className = "chips";
+    if (item.rule) {
+        chips.appendChild(makeChip("縛り", item.rule));
+    }
+    if (item.mood) {
+        chips.appendChild(makeChip("読後感", item.mood));
+    }
+    main.appendChild(chips);
+
+    /* 操作 */
+    var actions = document.createElement("div");
+    actions.className = "post-actions";
+
+    var likeBtn = document.createElement("button");
+    likeBtn.className = "post-action" + (item.liked ? " liked" : "");
+    likeBtn.textContent = (item.liked ? "★" : "☆") + " お気に入り";
+    likeBtn.addEventListener("click", function () {
+        item.liked = !item.liked;
+        persist();
+        if (lastPersistTrimmed || (state.filter === "liked" && !item.liked)) {
+            renderFeed();
+        } else {
+            likeBtn.className = "post-action" + (item.liked ? " liked" : "");
+            likeBtn.textContent = (item.liked ? "★" : "☆") + " お気に入り";
+            updateCount();
+        }
+    });
+    actions.appendChild(likeBtn);
+
+    var copyBtn = document.createElement("button");
+    copyBtn.className = "post-action";
+    copyBtn.textContent = "📋 コピー";
+    copyBtn.addEventListener("click", function () {
+        copyText(toPlainText(item));
+    });
+    actions.appendChild(copyBtn);
+
+    var delBtn = document.createElement("button");
+    delBtn.className = "post-action";
+    delBtn.textContent = "🗑 削除";
+    delBtn.addEventListener("click", function () {
+        var index = feed.indexOf(item);
+        if (index !== -1) {
+            feed.splice(index, 1);
+            persist();
+            renderFeed();
+        }
+    });
+    actions.appendChild(delBtn);
+
+    main.appendChild(actions);
+    post.appendChild(main);
+    return post;
+}
+
+/*
+   件数表示
+*/
+function updateCount() {
+    var liked = feed.filter(function (item) {
+        return item.liked;
+    }).length;
+    elCount.textContent = "カード " + feed.length + " 件"
+        + (liked ? " (★ " + liked + ")" : "");
+}
+
+/*
+   フィード全体を描き直す
+*/
+function renderFeed() {
+    var items = visibleItems();
+    if (state.shown < PAGE_SIZE) {
+        state.shown = PAGE_SIZE;
+    }
+    elFeed.innerHTML = "";
+
+    if (!items.length) {
+        var empty = document.createElement("div");
+        empty.className = "feed-empty";
+        empty.textContent = state.filter === "liked"
+            ? "★を付けたお題がここに並びます。"
+            : "まもなく最初のお題が流れてきます。";
+        elFeed.appendChild(empty);
+        updateCount();
+        return;
+    }
+
+    items.slice(0, state.shown).forEach(function (item, index) {
+        var post = makePost(item);
+        if (index === 0 && state.filter === "all") {
+            post.classList.add("latest");
+        }
+        elFeed.appendChild(post);
+    });
+
+    if (items.length > state.shown) {
+        var more = document.createElement("button");
+        more.className = "feed-more";
+        more.textContent = "さらに表示 (残り " + (items.length - state.shown) + " 件)";
+        more.addEventListener("click", function () {
+            state.shown += PAGE_SIZE;
+            renderFeed();
+        });
+        elFeed.appendChild(more);
+    }
+    updateCount();
+}
+
+/*
+   新しいカードを先頭に差し込む
+*/
+function prependPost(item) {
+    if (state.filter === "liked" && !item.liked) {
+        updateCount();
+        return;
+    }
+    var empty = elFeed.querySelector(".feed-empty");
+    if (empty) {
+        elFeed.innerHTML = "";
+    }
+    var prevLatest = elFeed.querySelector(".post.latest");
+    if (prevLatest) {
+        prevLatest.classList.remove("latest");
+    }
+    var post = makePost(item);
+    post.classList.add("enter");
+    if (state.filter === "all") {
+        post.classList.add("latest");
+    }
+    elFeed.insertBefore(post, elFeed.firstChild);
+    state.shown += 1;
+    updateCount();
+}
+
+/*
+   経過時間の表示を更新する
+*/
+function refreshTimes() {
+    var nodes = elFeed.querySelectorAll(".post-time");
+    Array.prototype.forEach.call(nodes, function (node) {
+        node.textContent = timeLabel(Number(node.getAttribute("data-at")));
+    });
 }
 
 /* =====================================================
@@ -793,8 +1145,18 @@ var elFill = document.getElementById("timer-fill");
 var elLabel = document.getElementById("timer-label");
 
 function nextPrompt() {
-    state.current = generate();
-    render(state.current);
+    var item = generate();
+    feed.unshift(item);
+    if (feed.length > MAX_ITEMS) {
+        feed.length = MAX_ITEMS;
+    }
+    persist();
+    if (lastPersistTrimmed) {
+        /* 古いカードを捨てた直後は並びが変わるので作り直す */
+        renderFeed();
+    } else {
+        prependPost(item);
+    }
     state.startedAt = Date.now();
     state.remain = INTERVAL_MS;
     updateTimer();
@@ -811,14 +1173,20 @@ function updateTimer() {
         : "次のお題まで " + Math.ceil(left / 1000) + " 秒";
 }
 
+var lastTimeRefresh = 0;
+
 /*
-   30秒たったら自動で次へ
+   30秒たったら自動で次のカードを追加する
 */
 function tick() {
     if (!state.paused && Date.now() - state.startedAt >= INTERVAL_MS) {
         nextPrompt();
     } else {
         updateTimer();
+    }
+    if (Date.now() - lastTimeRefresh > 10000) {
+        lastTimeRefresh = Date.now();
+        refreshTimes();
     }
     requestAnimationFrame(tick);
 }
@@ -834,83 +1202,8 @@ function setPaused(paused) {
     }
     state.paused = paused;
     elTimer.classList.toggle("paused", paused);
-    document.getElementById("pause-label").textContent = paused ? "再開" : "一時停止";
+    document.getElementById("btn-pause").textContent = paused ? "▶ 再開" : "⏸ 一時停止";
     updateTimer();
-}
-
-/* =====================================================
-   保存 (localStorage)
-===================================================== */
-var STORE_KEY = "creative-prompt-saved";
-var saved = [];
-
-function loadSaved() {
-    try {
-        var raw = localStorage.getItem(STORE_KEY);
-        saved = raw ? JSON.parse(raw) : [];
-        if (!(saved instanceof Array)) {
-            saved = [];
-        }
-    } catch (e) {
-        saved = [];
-    }
-}
-function persist() {
-    try {
-        localStorage.setItem(STORE_KEY, JSON.stringify(saved));
-    } catch (e) {
-        toast("保存できませんでした");
-    }
-}
-
-var elSavedList = document.getElementById("saved-list");
-var elSavedCount = document.getElementById("saved-count");
-
-function renderSaved() {
-    elSavedList.innerHTML = "";
-    elSavedCount.textContent = saved.length ? "(" + saved.length + ")" : "";
-
-    if (!saved.length) {
-        var empty = document.createElement("div");
-        empty.className = "saved-empty";
-        empty.textContent = "まだありません。気に入ったお題は★で保存できます。";
-        elSavedList.appendChild(empty);
-        return;
-    }
-
-    saved.forEach(function (item, index) {
-        var box = document.createElement("div");
-        box.className = "saved-item";
-
-        var text = document.createElement("div");
-        text.className = "saved-item-text";
-        text.textContent = toPlainText(item);
-        box.appendChild(text);
-
-        var foot = document.createElement("div");
-        foot.className = "saved-item-foot";
-
-        var copyBtn = document.createElement("button");
-        copyBtn.className = "text-button";
-        copyBtn.textContent = "コピー";
-        copyBtn.addEventListener("click", function () {
-            copyText(toPlainText(item));
-        });
-        foot.appendChild(copyBtn);
-
-        var delBtn = document.createElement("button");
-        delBtn.className = "text-button";
-        delBtn.textContent = "削除";
-        delBtn.addEventListener("click", function () {
-            saved.splice(index, 1);
-            persist();
-            renderSaved();
-        });
-        foot.appendChild(delBtn);
-
-        box.appendChild(foot);
-        elSavedList.appendChild(box);
-    });
 }
 
 /* =====================================================
@@ -958,7 +1251,7 @@ function toast(message) {
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () {
         elToast.classList.remove("show");
-    }, 1600);
+    }, 1800);
 }
 
 /* =====================================================
@@ -970,45 +1263,30 @@ document.getElementById("btn-next").addEventListener("click", function () {
 document.getElementById("btn-pause").addEventListener("click", function () {
     setPaused(!state.paused);
 });
-document.getElementById("btn-save").addEventListener("click", function () {
-    if (!state.current) {
-        return;
-    }
-    saved.unshift(state.current);
-    if (saved.length > 100) {
-        saved.pop();
-    }
-    persist();
-    renderSaved();
-    toast("保存しました");
-});
-document.getElementById("btn-copy").addEventListener("click", function () {
-    if (state.current) {
-        copyText(toPlainText(state.current));
-    }
-});
 document.getElementById("btn-copy-all").addEventListener("click", function () {
-    if (!saved.length) {
-        toast("保存されたお題がありません");
+    var items = visibleItems();
+    if (!items.length) {
+        toast("コピーするカードがありません");
         return;
     }
-    copyText(saved.map(toPlainText).join("\n\n"));
+    copyText(items.map(toPlainText).join("\n\n"));
 });
 document.getElementById("btn-clear").addEventListener("click", function () {
-    if (!saved.length) {
+    if (!feed.length) {
         return;
     }
-    if (window.confirm("保存したお題をすべて消去します。よろしいですか?")) {
-        saved = [];
+    if (window.confirm("保存中の " + feed.length + " 件のカードをすべて消去します。よろしいですか?")) {
+        feed = [];
+        state.shown = PAGE_SIZE;
         persist();
-        renderSaved();
+        renderFeed();
     }
 });
 
 /*
-   セグメント (ジャンル / 形式)
+   セグメント (生成設定・表示フィルタ)
 */
-function bindSegment(id, key) {
+function bindSegment(id, key, attr, onChange) {
     var seg = document.getElementById(id);
     seg.addEventListener("click", function (e) {
         var btn = e.target.closest("button");
@@ -1019,12 +1297,20 @@ function bindSegment(id, key) {
             b.classList.remove("active");
         });
         btn.classList.add("active");
-        state[key] = btn.getAttribute(key === "genre" ? "data-genre" : "data-type");
-        nextPrompt();
+        state[key] = btn.getAttribute(attr);
+        onChange();
     });
 }
-bindSegment("genre-seg", "genre");
-bindSegment("type-seg", "type");
+bindSegment("genre-seg", "genre", "data-genre", function () {
+    nextPrompt();
+});
+bindSegment("type-seg", "type", "data-type", function () {
+    nextPrompt();
+});
+bindSegment("filter-seg", "filter", "data-filter", function () {
+    state.shown = PAGE_SIZE;
+    renderFeed();
+});
 
 /*
    キーボード操作
@@ -1041,8 +1327,8 @@ document.addEventListener("keydown", function (e) {
 /* =====================================================
    起動
 ===================================================== */
-loadSaved();
-renderSaved();
+loadFeed();
+renderFeed();
 nextPrompt();
 requestAnimationFrame(tick);
 </script>
