@@ -307,6 +307,13 @@ body {
     border-radius: 7px;
     padding: 4px 9px;
 }
+.chip.topic {
+    background: #fff3e0;
+    color: #8a5300;
+}
+.chip.topic b {
+    color: #bb8a44;
+}
 .chip b {
     color: #999;
     font-weight: normal;
@@ -395,7 +402,7 @@ body {
 <div class="app">
     <div class="header">
         <div class="header-title">創作お題ジェネレーター</div>
-        <div class="header-sub">30秒ごとにお題が流れてきます。新しいものが上に積まれます。</div>
+        <div class="header-sub">30秒ごとにあらすじが流れてきます。新しいものが上に積まれます。</div>
     </div>
 
     <!-- 上部操作バー -->
@@ -406,10 +413,10 @@ body {
                 <button data-genre="real">現実</button>
                 <button data-genre="fantasy">ファンタジー</button>
             </div>
-            <div class="segment" id="type-seg">
-                <button data-type="any" class="active">両方</button>
-                <button data-type="theme">お題</button>
-                <button data-type="story">あらすじ</button>
+            <div class="segment" id="news-seg">
+                <button data-news="off" class="active">時事なし</button>
+                <button data-news="some">時事ときどき</button>
+                <button data-news="always">時事いつも</button>
             </div>
         </div>
         <div class="timer" id="timer">
@@ -437,8 +444,10 @@ body {
     <div class="feed" id="feed"></div>
 
     <div class="note">
-        ・出てきたお題は自動でカード保存されます (このブラウザ内 localStorage、保存できる限り保持)<br>
-        ・キーボード: スペースで一時停止 / → で次のお題
+        ・出てきたあらすじは自動でカード保存されます (このブラウザ内 localStorage、保存できる限り保持)<br>
+        ・キーボード: スペースで一時停止 / → で次のお題<br>
+        ・時事ネタは Wikipedia 日本語版の「最近の出来事」と「その日よく読まれた記事」から取得しています
+        (CC BY-SA)。創作のお題に向かない話題は除外しています。
     </div>
 </div>
 
@@ -654,15 +663,12 @@ var MOODS = [
     "取り返しのつかなさ", "生活のにおい", "ふしぎな明るさ"
 ];
 
-/* お題の文型 */
-var THEME_TEMPLATES = [
-    function (a, b) { return "「" + a + "」と「" + b + "」。\nこのふたつを結びつけて一本書く。"; },
-    function (a, b) { return "「" + a + "」から始まり、「" + b + "」で終わる話。"; },
-    function (a, b) { return "「" + a + "」をめぐって、ふたりの人物がすれ違う話。"; },
-    function (a, b) { return "「" + a + "」というタイトルで書く。\n本文には「" + b + "」を必ず登場させること。"; },
-    function (a, b) { return "「" + a + "」を、誰かに手放さなければならなくなる話。\n鍵になるのは「" + b + "」。"; },
-    function (a, b) { return "「" + a + "」が、その日だけ特別な意味を持つ。\n締めくくりに「" + b + "」を置く。"; },
-    function (a, b) { return "「" + a + "」を探している人物と、「" + b + "」を隠している人物の話。"; }
+/* あらすじの締めに足すキーワード行 (旧「お題」の要素) */
+var KEY_TEMPLATES = [
+    function (kw) { return "鍵になるのは「" + kw + "」。"; },
+    function (kw) { return "どこかに「" + kw + "」を出すこと。"; },
+    function (kw) { return "「" + kw + "」から書きはじめてもいい。"; },
+    function (kw) { return "最後に効いてくるのは「" + kw + "」。"; }
 ];
 
 /* あらすじの文型 */
@@ -714,7 +720,7 @@ var MAX_ITEMS = 2000;    /* 保持するカードの上限 */
 
 var state = {
     genre: "any",
-    type: "any",
+    news: "off",     /* off | some | always */
     filter: "all",
     paused: false,
     startedAt: 0,
@@ -734,41 +740,35 @@ function resolveGenre() {
     }
     return state.genre;
 }
-function resolveType() {
-    if (state.type === "any") {
-        return Math.random() < 0.5 ? "theme" : "story";
-    }
-    return state.type;
-}
-
 function buildOne() {
     var genreKey = resolveGenre();
-    var typeKey = resolveType();
     var d = DATA[genreKey];
-    var text;
+    var text = pick(STORY_TEMPLATES)({
+        stage: pick(d.stage),
+        hero: pick(d.hero),
+        event: pick(d.event),
+        twist: pick(d.twist),
+        goal: pick(d.goal)
+    });
+    text += "\n" + pick(KEY_TEMPLATES)(pick(d.keyword));
 
-    if (typeKey === "theme") {
-        var kw = pickTwo(d.keyword);
-        text = pick(THEME_TEMPLATES)(kw[0], kw[1]);
-    } else {
-        text = pick(STORY_TEMPLATES)({
-            stage: pick(d.stage),
-            hero: pick(d.hero),
-            event: pick(d.event),
-            twist: pick(d.twist),
-            goal: pick(d.goal)
-        });
-    }
-    return {
+    var item = {
         id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 8),
         genre: genreKey,
-        type: typeKey,
+        type: "story",
         text: text,
         rule: pick(RULES),
         mood: pick(MOODS),
         at: Date.now(),
         liked: false
     };
+    /* 時事ネタを混ぜる */
+    if (state.news !== "off" && topics.length) {
+        if (state.news === "always" || Math.random() < 0.45) {
+            item.topic = pick(topics);
+        }
+    }
+    return item;
 }
 
 /*
@@ -796,7 +796,250 @@ function typeLabel(item) {
 function toPlainText(item) {
     return "【" + genreLabel(item) + " / " + typeLabel(item) + "】\n"
         + item.text + "\n"
+        + (item.topic ? "時事: " + item.topic + "\n" : "")
         + "縛り: " + item.rule + " / 読後感: " + item.mood;
+}
+
+/* =====================================================
+   時事ネタ (Wikipedia 日本語版)
+   ---------------------------------------------------
+   ・Portal:最近の出来事      … ニュースの見出し
+   ・その日よく読まれた記事   … トレンドの語
+   をまとめて取り込み、あらすじに混ぜる材料にする。
+   どちらも CORS 許可済みで、鍵なしで呼べる。
+===================================================== */
+var TREND_KEY = "creative-prompt-trends";
+
+/* 創作のお題として扱いたくない話題は落とす */
+var TOPIC_NG = new RegExp(
+    "死去|死亡|訃報|遺体|自殺|殺|射殺|災害|被災|地震|津波|洪水|豪雨|土石流|噴火|"
+    + "事故|墜落|衝突|火災|延焼|テロ|戦争|侵攻|紛争|空爆|爆発|銃|ミサイル|拉致|"
+    + "逮捕|容疑|起訴|有罪|虐待|暴行|性的|被害|感染|流行|病|死刑|失踪|行方不明|遭難"
+);
+
+var topics = [];
+var trendState = "idle";   /* idle | loading | ready | failed */
+
+function datePath(offsetDays) {
+    var d = new Date(Date.now() - (offsetDays || 0) * 86400000);
+    function pad(n) {
+        return n < 10 ? "0" + n : String(n);
+    }
+    return d.getFullYear() + "/" + pad(d.getMonth() + 1) + "/" + pad(d.getDate());
+}
+
+function decodeEntities(text) {
+    return text
+        .replace(/&#(\d+);/g, function (m, code) {
+            return String.fromCharCode(Number(code));
+        })
+        .replace(/&quot;/g, "\"")
+        .replace(/&#39;/g, "'")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&");
+}
+
+/*
+   ニュース見出しの整形
+   「（政治）（IT）…… -時事」のような前後の付属を落とす
+*/
+function cleanNewsLine(text) {
+    var s = decodeEntities(text.replace(/<[^>]*>/g, ""));
+    s = s.replace(/^(?:（[^）]{1,14}）)+/, "");
+    s = s.replace(/\s*[-–—]\s*[^\s\-–—]{1,10}$/, "");
+    return s.replace(/\s+/g, " ").trim();
+}
+
+function acceptTopic(text) {
+    if (!text || text.length < 2 || text.length > 60) {
+        return false;
+    }
+    if (text.indexOf(":") !== -1 || text.indexOf("：") !== -1) {
+        return false;
+    }
+    if (text === "メインページ" || text.indexOf("Wikipedia") === 0) {
+        return false;
+    }
+    return !TOPIC_NG.test(text);
+}
+
+function filterTopics(list) {
+    var seen = {};
+    var out = [];
+    list.forEach(function (text) {
+        var t = String(text || "").trim();
+        if (acceptTopic(t) && !seen[t]) {
+            seen[t] = true;
+            out.push(t);
+        }
+    });
+    return out.slice(0, 60);
+}
+
+/*
+   その日よく読まれた記事
+*/
+function fetchMostRead(offsetDays) {
+    return fetch("https://ja.wikipedia.org/api/rest_v1/feed/featured/" + datePath(offsetDays))
+        .then(function (res) {
+            if (!res.ok) {
+                throw new Error("status " + res.status);
+            }
+            return res.json();
+        })
+        .then(function (data) {
+            var list = (data && data.mostread && data.mostread.articles) || [];
+            return list.map(function (a) {
+                var title = a.normalizedtitle || a.title || "";
+                return title.replace(/\s*\([^)]*\)$/, "");
+            });
+        });
+}
+
+/*
+   最近の出来事 (見出しだけを取り出す。HTML は DOM に入れずに処理する)
+*/
+function fetchRecentNews() {
+    var url = "https://ja.wikipedia.org/w/api.php?action=parse"
+        + "&page=Portal%3A%E6%9C%80%E8%BF%91%E3%81%AE%E5%87%BA%E6%9D%A5%E4%BA%8B"
+        + "&prop=text&formatversion=2&format=json&origin=*";
+    return fetch(url)
+        .then(function (res) {
+            if (!res.ok) {
+                throw new Error("status " + res.status);
+            }
+            return res.json();
+        })
+        .then(function (data) {
+            var html = (data && data.parse && data.parse.text) || "";
+            var items = html.match(/<li\b[^>]*>[\s\S]*?<\/li>/g) || [];
+            return items.map(cleanNewsLine);
+        });
+}
+
+function readCachedTopics() {
+    try {
+        var cache = JSON.parse(localStorage.getItem(TREND_KEY) || "null");
+        if (cache && cache.date === datePath(0) && cache.items instanceof Array) {
+            return cache.items;
+        }
+    } catch (e) {
+        return null;
+    }
+    return null;
+}
+
+function writeCachedTopics(items) {
+    try {
+        localStorage.setItem(TREND_KEY, JSON.stringify({ date: datePath(0), items: items }));
+    } catch (e) {
+        /* 保存できなくても次回取り直すだけ */
+    }
+}
+
+/*
+   取得が間に合わなかった最新カードに、あとから話題を足す
+*/
+function applyTopicToLatest() {
+    if (state.news === "off" || !topics.length || !feed.length) {
+        return;
+    }
+    var latest = feed[0];
+    if (latest.topic) {
+        return;
+    }
+    if (state.news !== "always" && Math.random() >= 0.45) {
+        return;
+    }
+    latest.topic = pick(topics);
+    persist();
+    renderFeed();
+}
+
+function loadTrends() {
+    if (trendState === "loading" || trendState === "ready") {
+        return;
+    }
+    var cached = readCachedTopics();
+    if (cached && cached.length) {
+        topics = cached;
+        trendState = "ready";
+        return;
+    }
+    if (typeof fetch !== "function") {
+        trendState = "failed";
+        return;
+    }
+    trendState = "loading";
+    Promise.all([
+        fetchMostRead(0).catch(function () {
+            return fetchMostRead(1);
+        }).catch(function () {
+            return [];
+        }),
+        fetchRecentNews().catch(function () {
+            return [];
+        })
+    ]).then(function (lists) {
+        topics = filterTopics((lists[1] || []).concat(lists[0] || []));
+        if (topics.length) {
+            trendState = "ready";
+            writeCachedTopics(topics);
+            toast("今日の話題を " + topics.length + " 件読み込みました");
+            applyTopicToLatest();
+        } else {
+            trendState = "failed";
+            toast("時事ネタを取得できませんでした");
+        }
+    }, function () {
+        trendState = "failed";
+        toast("時事ネタを取得できませんでした");
+    });
+}
+
+/* =====================================================
+   設定の保存
+===================================================== */
+var SETTINGS_KEY = "creative-prompt-settings";
+
+function loadSettings() {
+    try {
+        var saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
+        if (saved.genre === "real" || saved.genre === "fantasy" || saved.genre === "any") {
+            state.genre = saved.genre;
+        }
+        if (saved.news === "off" || saved.news === "some" || saved.news === "always") {
+            state.news = saved.news;
+        }
+    } catch (e) {
+        /* 既定のまま使う */
+    }
+}
+
+function saveSettings() {
+    try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+            genre: state.genre,
+            news: state.news
+        }));
+    } catch (e) {
+        /* 保存できなくても動作には影響しない */
+    }
+}
+
+/*
+   読み込んだ設定をセグメントの見た目に反映する
+*/
+function applySettings() {
+    [["genre-seg", "data-genre", state.genre], ["news-seg", "data-news", state.news]]
+        .forEach(function (conf) {
+            var seg = document.getElementById(conf[0]);
+            Array.prototype.forEach.call(seg.querySelectorAll("button"), function (b) {
+                b.classList.toggle("active", b.getAttribute(conf[1]) === conf[2]);
+            });
+        });
 }
 
 /* =====================================================
@@ -994,6 +1237,11 @@ function makePost(item) {
     /* 縛り・読後感 */
     var chips = document.createElement("div");
     chips.className = "chips";
+    if (item.topic) {
+        var topicChip = makeChip("時事", item.topic);
+        topicChip.className = "chip topic";
+        chips.appendChild(topicChip);
+    }
     if (item.rule) {
         chips.appendChild(makeChip("縛り", item.rule));
     }
@@ -1302,9 +1550,14 @@ function bindSegment(id, key, attr, onChange) {
     });
 }
 bindSegment("genre-seg", "genre", "data-genre", function () {
+    saveSettings();
     nextPrompt();
 });
-bindSegment("type-seg", "type", "data-type", function () {
+bindSegment("news-seg", "news", "data-news", function () {
+    saveSettings();
+    if (state.news !== "off") {
+        loadTrends();
+    }
     nextPrompt();
 });
 bindSegment("filter-seg", "filter", "data-filter", function () {
@@ -1327,6 +1580,11 @@ document.addEventListener("keydown", function (e) {
 /* =====================================================
    起動
 ===================================================== */
+loadSettings();
+applySettings();
+if (state.news !== "off") {
+    loadTrends();
+}
 loadFeed();
 renderFeed();
 nextPrompt();
