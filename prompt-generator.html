@@ -203,6 +203,7 @@ body {
     gap: 10px;
     padding: 14px;
     border-bottom: 1px solid #eeeef0;
+    cursor: pointer;
 }
 .post:last-child {
     border-bottom: none;
@@ -366,6 +367,184 @@ body {
     text-align: center;
 }
 /* =====================================================
+   詳細ポップアップ
+===================================================== */
+.modal {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 40;
+    display: none;
+}
+.modal.open {
+    display: block;
+}
+.modal-back {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: rgba(0, 0, 0, 0.35);
+}
+.modal-sheet {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 100%;
+    max-width: 640px;
+    max-height: 88vh;
+    transform: translateX(-50%);
+    background: #ffffff;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+    display: flex;
+    flex-direction: column;
+    animation: sheetin 0.26s ease;
+}
+@keyframes sheetin {
+    from {
+        transform: translateX(-50%) translateY(26px);
+        opacity: 0.3;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+.modal-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    padding: 14px;
+    border-bottom: 1px solid #eeeef0;
+}
+.modal-title {
+    flex: 1;
+    font-size: 15px;
+    font-weight: bold;
+}
+.modal-close {
+    border: none;
+    background: none;
+    color: #888;
+    font-size: 17px;
+    cursor: pointer;
+    padding: 4px 6px;
+    font-family: inherit;
+}
+.modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 14px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.modal-foot {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 8px;
+    padding: 12px 14px;
+    border-top: 1px solid #eeeef0;
+}
+.modal-foot .bar-button {
+    flex: 1;
+    text-align: center;
+}
+/*
+   あらすじの再掲
+*/
+.detail-summary {
+    background: #fafbff;
+    border: 1px solid #e8ecf7;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 14px;
+    line-height: 1.85;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+.detail-label {
+    font-size: 12px;
+    color: #999;
+    margin: 16px 0 6px;
+}
+/*
+   登場人物
+*/
+.detail-cast div {
+    font-size: 13px;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+}
+.detail-cast b {
+    color: #999;
+    font-weight: normal;
+    font-size: 12px;
+    margin-right: 6px;
+}
+/*
+   起承転結
+*/
+.beat {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f1f3;
+}
+.beat:last-child {
+    border-bottom: none;
+}
+.beat-label {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #eef3ff;
+    color: #3a5a9b;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.beat-main {
+    flex: 1;
+    min-width: 0;
+}
+.beat-name {
+    font-size: 11px;
+    color: #aaa;
+}
+.beat-line {
+    font-size: 14px;
+    line-height: 1.85;
+    margin-top: 2px;
+    overflow-wrap: anywhere;
+}
+/*
+   オチ
+*/
+.ending-box {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #fff7ec;
+    border: 1px solid #f0dfc4;
+}
+.ending-type {
+    font-size: 11px;
+    color: #8a5300;
+}
+.ending-text {
+    font-size: 14px;
+    line-height: 1.85;
+    margin-top: 4px;
+    overflow-wrap: anywhere;
+}
+/* =====================================================
    トースト
 ===================================================== */
 .toast {
@@ -444,10 +623,28 @@ body {
     <div class="feed" id="feed"></div>
 
     <div class="note">
+        ・カードをタップすると、話の流れ (起承転結) とオチが開きます<br>
         ・出てきたあらすじは自動でカード保存されます (このブラウザ内 localStorage、保存できる限り保持)<br>
         ・キーボード: スペースで一時停止 / → で次のお題<br>
         ・時事ネタは Wikipedia 日本語版の「最近の出来事」と「その日よく読まれた記事」から取得しています
         (CC BY-SA)。創作のお題に向かない話題は除外しています。
+    </div>
+</div>
+
+<!-- 詳細ポップアップ -->
+<div class="modal" id="modal">
+    <div class="modal-back" id="modal-back"></div>
+    <div class="modal-sheet" role="dialog" aria-modal="true" aria-label="話の流れとオチ">
+        <div class="modal-head">
+            <div class="modal-title">話の流れとオチ</div>
+            <button class="modal-close" id="modal-close" aria-label="閉じる">✕</button>
+        </div>
+        <div class="modal-body" id="modal-body"></div>
+        <div class="modal-foot">
+            <button class="bar-button" id="modal-reroll">🔀 別の展開</button>
+            <button class="bar-button" id="modal-copy">📋 コピー</button>
+            <button class="bar-button primary" id="modal-ok">閉じる</button>
+        </div>
     </div>
 </div>
 
@@ -743,14 +940,15 @@ function resolveGenre() {
 function buildOne() {
     var genreKey = resolveGenre();
     var d = DATA[genreKey];
-    var text = pick(STORY_TEMPLATES)({
+    var parts = {
         stage: pick(d.stage),
         hero: pick(d.hero),
         event: pick(d.event),
         twist: pick(d.twist),
-        goal: pick(d.goal)
-    });
-    text += "\n" + pick(KEY_TEMPLATES)(pick(d.keyword));
+        goal: pick(d.goal),
+        kw: pick(d.keyword)
+    };
+    var text = pick(STORY_TEMPLATES)(parts) + "\n" + pick(KEY_TEMPLATES)(parts.kw);
 
     var item = {
         id: String(Date.now()) + "-" + Math.random().toString(36).slice(2, 8),
@@ -759,6 +957,7 @@ function buildOne() {
         text: text,
         rule: pick(RULES),
         mood: pick(MOODS),
+        parts: parts,
         at: Date.now(),
         liked: false
     };
@@ -798,6 +997,211 @@ function toPlainText(item) {
         + item.text + "\n"
         + (item.topic ? "時事: " + item.topic + "\n" : "")
         + "縛り: " + item.rule + " / 読後感: " + item.mood;
+}
+
+/* =====================================================
+   詳細展開 (話の流れとオチ)
+   ---------------------------------------------------
+   カードごとに内容が変わらないよう、カードの id から
+   作った擬似乱数で組み立てる。
+===================================================== */
+var DETAIL = {
+    real: {
+        daily: [
+            "毎日、誰にも気づかれないように同じ時間をやり過ごしている。",
+            "頼まれごとを断れないまま、今日も引き受けてしまう。",
+            "やめたはずの習慣を、ひとりのときだけ続けている。",
+            "帰り道をわざと遠回りして、時間をつぶす癖がある。",
+            "言いたいことを、いつも言えないまま持ち帰っている。",
+            "周りからは「何も変わらない人」だと思われている。",
+            "家でも職場でも、少しずつ違う顔を使い分けている。",
+            "一日の終わりに、必ず同じ場所へ立ち寄る。"
+        ],
+        middle: [
+            "事情を知っていそうな人物に会いに行くが、話は途中ではぐらかされる。",
+            "手元の記録と、周りの証言が少しずつ食い違いはじめる。",
+            "黙っているつもりだったことを、ひとりにだけ打ち明けてしまう。",
+            "同じことを調べている人間が、もうひとりいると気づく。",
+            "手伝ってくれる人が現れる。ただし、その人にも隠していることがある。",
+            "期限が急に縮まり、選べる道が減っていく。",
+            "引き返せる機会が一度だけあったのに、見送ってしまう。",
+            "関係のない人を巻き込んでしまい、後戻りしづらくなる。",
+            "確かめたかった相手が、もうその場所にいないとわかる。",
+            "古い写真と手紙から、聞いていた話と違う事実が出てくる。",
+            "身近な人の嘘に気づくが、指摘できずに飲み込む。",
+            "段取りが狂い、いちばん会いたくなかった相手と鉢合わせる。"
+        ],
+        turn: [
+            "そこで、信じてきた前提がひとつ崩れる。",
+            "かばっていた相手こそが、最初から事情を知っていたとわかる。",
+            "被害者のつもりでいた出来事を、別の側から見た姿で知らされる。",
+            "打ち明けるはずだった言葉を、先に相手のほうから言われてしまう。",
+            "手に入れたかったものが、もう自分には必要ないと気づく。",
+            "助けているつもりだった相手に、ずっと助けられていたとわかる。",
+            "隠していた事実が、いちばん知られたくない相手に伝わる。",
+            "最終日になって、予定になかった人物が現れる。"
+        ],
+        ending: [
+            { type: "静かな決着", text: "結局、大きくは何も変わらない。ただ、翌朝の景色の見え方だけが違っている。" },
+            { type: "遅れた和解", text: "言えなかった一言を、まったく別の言い方で伝える。相手はそれを、たぶん半分だけ受け取る。" },
+            { type: "皮肉", text: "探していた答えは手に入る。しかし、それを渡すはずだった相手はもういない。" },
+            { type: "円環", text: "最初と同じ場所に戻ってくる。違うのは、今度は自分から声をかけることだ。" },
+            { type: "どんでん返し", text: "最後にわかるのは、ずっと待たれていたのは自分のほうだったということ。" },
+            { type: "余韻", text: "答えは出さないまま、「{kw}」だけを持ち帰る。どうするかは、また明日決める。" },
+            { type: "別れ", text: "もう会わないと決めて、そのぶんだけ丁寧に別れる。" },
+            { type: "再出発", text: "引き受けられなかった役目を、今度は自分から引き受ける。小さいが、確かな変化。" },
+            { type: "ささやかな救い", text: "誰にも気づかれない場所で、ひとつだけやり直しがきく。" },
+            { type: "苦い選択", text: "守るために、いちばん大事にしていたものを手放す。後悔はするが、迷いはしない。" }
+        ]
+    },
+    fantasy: {
+        daily: [
+            "役目を果たす者がいなくなった今も、ひとりで務めを続けている。",
+            "誰にも打ち明けていない、小さな契約を抱えている。",
+            "力を使いすぎた分を、毎日すこしずつ体で払っている。",
+            "この土地の決まりごとを、半分だけ信じて暮らしている。",
+            "帰る場所を失ってから、名前を名乗るのをやめている。",
+            "客の来ない店を、それでも毎朝あけている。",
+            "人ならざるものと、言葉を交わせてしまう。",
+            "願いを叶える仕事をしながら、自分の願いだけは決めていない。"
+        ],
+        middle: [
+            "頼りになるはずの古い記録は、肝心なところが欠けている。",
+            "同じ目的の相手と手を組むが、目指す終わり方が違うとわかる。",
+            "代償の重さが、思っていたより一段深いと知らされる。",
+            "街の人々が、この異変に少しずつ慣れはじめてしまう。",
+            "力を使うたびに、失うものの順番が見えてくる。",
+            "味方のはずの者が、別の契約を交わしていたと気づく。",
+            "一度だけ引き返せる分かれ道で、進むほうを選ぶ。",
+            "予言の言葉が、思っていたのとは別の意味に読めてくる。",
+            "守るべき相手が、自分の意思で危ういほうへ歩いていく。",
+            "奇跡の値段が吊り上がり、払える者がいなくなる。",
+            "かつて自分が壊したものと、もう一度向き合うことになる。",
+            "呼んではいけない名を、向こうから呼ばれてしまう。"
+        ],
+        turn: [
+            "そこで、この異変の源が自分の側にあったとわかる。",
+            "敵だと思っていた相手が、同じものを守ろうとしていたと知る。",
+            "叶えたかった願いは、誰かの願いを取り消すことだったと気づく。",
+            "失うはずの記憶の中に、手放したくない一日が入っている。",
+            "世界を戻す方法は、自分が忘れられることだと判明する。",
+            "予言の「最後のひとり」が、自分ではなかったとわかる。",
+            "払うはずの代償を、代わりに引き受けようとする者が現れる。",
+            "力を捨てたときにだけ、本当の扉が開くと知る。"
+        ],
+        ending: [
+            { type: "小さな奇跡", text: "奇跡はごく小さな形で起きる。世界は変わらず、目の前のひとりだけが助かる。" },
+            { type: "犠牲", text: "望んだ結末は手に入る。ただし、それを覚えている者はもういない。" },
+            { type: "円環", text: "すべてが元に戻る。ただひとつ、始まりの場所に新しい灯りがともっている。" },
+            { type: "どんでん返し", text: "最後の一頁で、この物語を書いていたのが誰だったのかがわかる。" },
+            { type: "余韻", text: "「{kw}」だけを残して、その人は季節の向こうへ消える。" },
+            { type: "継承", text: "役目は次の誰かへ渡る。渡す相手を選べたことが、唯一の勝ちだった。" },
+            { type: "苦い勝利", text: "世界は続く。代わりに、二度と戻れない場所がひとつ増える。" },
+            { type: "逆転", text: "最後に残ったいちばん弱い魔法が、すべてをひっくり返す。" },
+            { type: "見送り", text: "空へ還るものを見送る。引き止めないことが、いちばんの優しさだった。" },
+            { type: "静かな朝", text: "大きな戦いは起きない。祭りの支度をして、ただ朝を迎える。" }
+        ]
+    }
+};
+
+/*
+   カード id から決まった値を返す擬似乱数
+*/
+function hashString(text) {
+    var h = 2166136261;
+    for (var i = 0; i < text.length; i++) {
+        h ^= text.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+}
+
+function makeRandom(seed) {
+    var t = seed >>> 0;
+    return function () {
+        t = (t + 0x6D2B79F5) >>> 0;
+        var r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r = (r + Math.imul(r ^ (r >>> 7), 61 | r)) ^ r;
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+function pickWith(rand, list) {
+    return list[Math.floor(rand() * list.length)];
+}
+
+/*
+   カードから「話の流れ」と「オチ」を組み立てる
+*/
+function buildDetail(item) {
+    var genreKey = DETAIL[item.genre] ? item.genre : "real";
+    var d = DETAIL[genreKey];
+    var cast = DATA[genreKey].hero;
+    var parts = item.parts || {};
+    var rand = makeRandom(hashString(item.id + "|" + (item.detailSeed || 0)));
+
+    /* 脇役は主人公と重ならないように選ぶ */
+    var others = cast.filter(function (name) {
+        return name !== parts.hero;
+    });
+    var ally = pickWith(rand, others);
+    var rival = pickWith(rand, others.filter(function (name) {
+        return name !== ally;
+    }));
+
+    var middleA = pickWith(rand, d.middle);
+    var middleB = pickWith(rand, d.middle.filter(function (line) {
+        return line !== middleA;
+    }));
+    var ending = pickWith(rand, d.ending);
+    var kw = parts.kw || pickWith(rand, DATA[genreKey].keyword);
+
+    var beats = [
+        { label: "起", name: "はじまり", lines: [pickWith(rand, d.daily)] },
+        { label: "承", name: "動きだす", lines: [middleA, middleB] },
+        { label: "転", name: "ひっくり返る", lines: [pickWith(rand, d.turn)] },
+        { label: "結", name: "決着", lines: [] }
+    ];
+    if (parts.event) {
+        beats[0].lines.push(parts.event + "。");
+    }
+    if (parts.twist) {
+        beats[2].lines.unshift(parts.twist + "。");
+    }
+    if (parts.goal) {
+        beats[3].lines.push(parts.goal + "。");
+    }
+
+    return {
+        stage: parts.stage || "",
+        hero: parts.hero || "",
+        ally: ally,
+        rival: rival,
+        beats: beats,
+        endingType: ending.type,
+        endingText: ending.text.replace("{kw}", kw)
+    };
+}
+
+/*
+   詳細をテキストに落とす (コピー用)
+*/
+function detailToPlainText(item) {
+    var detail = buildDetail(item);
+    var out = toPlainText(item) + "\n\n";
+    if (detail.stage) {
+        out += "舞台: " + detail.stage + "\n";
+    }
+    if (detail.hero) {
+        out += "主人公: " + detail.hero + "\n";
+    }
+    out += "そばにいる人: " + detail.ally + "\n";
+    out += "行く手をふさぐ人: " + detail.rival + "\n\n";
+    detail.beats.forEach(function (beat) {
+        out += "【" + beat.label + " " + beat.name + "】\n" + beat.lines.join("\n") + "\n";
+    });
+    out += "\nオチ (" + detail.endingType + "): " + detail.endingText;
+    return out;
 }
 
 /* =====================================================
@@ -1107,7 +1511,7 @@ function persist() {
         feed.length = MAX_ITEMS;
         lastPersistTrimmed = true;
     }
-    for (var attempt = 0; attempt < 12; attempt++) {
+    for (var attempt = 0; attempt < 200; attempt++) {
         try {
             localStorage.setItem(STORE_KEY, JSON.stringify(feed));
             if (lastPersistTrimmed) {
@@ -1115,17 +1519,19 @@ function persist() {
             }
             return true;
         } catch (e) {
-            /* 容量オーバー: 古いカードを1割ずつ捨てて再挑戦 */
-            if (feed.length <= 10) {
+            /* 容量オーバー: 画面と保存がずれないよう、入るまで古いカードを捨てる */
+            if (feed.length <= 1) {
                 toast("これ以上は保存できませんでした");
                 lastPersistTrimmed = true;
                 return false;
             }
-            feed.splice(feed.length - Math.max(5, Math.floor(feed.length * 0.1)));
+            var drop = Math.max(1, Math.floor(feed.length * 0.1));
+            feed.splice(feed.length - drop, drop);
             lastPersistTrimmed = true;
         }
     }
     toast("これ以上は保存できませんでした");
+    lastPersistTrimmed = true;
     return false;
 }
 
@@ -1278,6 +1684,14 @@ function makePost(item) {
     });
     actions.appendChild(copyBtn);
 
+    var detailBtn = document.createElement("button");
+    detailBtn.className = "post-action";
+    detailBtn.textContent = "📖 詳しく";
+    detailBtn.addEventListener("click", function () {
+        openDetail(item);
+    });
+    actions.appendChild(detailBtn);
+
     var delBtn = document.createElement("button");
     delBtn.className = "post-action";
     delBtn.textContent = "🗑 削除";
@@ -1293,6 +1707,14 @@ function makePost(item) {
 
     main.appendChild(actions);
     post.appendChild(main);
+
+    /* カードのどこを押しても詳細を開く (ボタンの上は除く) */
+    post.addEventListener("click", function (e) {
+        if (e.target.closest("button")) {
+            return;
+        }
+        openDetail(item);
+    });
     return post;
 }
 
@@ -1503,6 +1925,120 @@ function toast(message) {
 }
 
 /* =====================================================
+   詳細ポップアップ
+===================================================== */
+var elModal = document.getElementById("modal");
+var elModalBody = document.getElementById("modal-body");
+var detailItem = null;
+var pausedForModal = false;
+
+function makeLine(className, text) {
+    var el = document.createElement("div");
+    el.className = className;
+    el.textContent = text;
+    return el;
+}
+
+function renderDetail() {
+    if (!detailItem) {
+        return;
+    }
+    var detail = buildDetail(detailItem);
+    elModalBody.innerHTML = "";
+
+    /* あらすじの再掲 */
+    elModalBody.appendChild(makeLine("detail-summary", detailItem.text));
+
+    /* 登場人物 */
+    elModalBody.appendChild(makeLine("detail-label", "登場人物"));
+    var cast = document.createElement("div");
+    cast.className = "detail-cast";
+    [["舞台", detail.stage], ["主人公", detail.hero],
+        ["そばにいる人", detail.ally], ["行く手をふさぐ人", detail.rival]]
+        .forEach(function (row) {
+            if (!row[1]) {
+                return;
+            }
+            var line = document.createElement("div");
+            var b = document.createElement("b");
+            b.textContent = row[0];
+            line.appendChild(b);
+            line.appendChild(document.createTextNode(row[1]));
+            cast.appendChild(line);
+        });
+    elModalBody.appendChild(cast);
+
+    /* 起承転結 */
+    elModalBody.appendChild(makeLine("detail-label", "話の流れ"));
+    detail.beats.forEach(function (beat) {
+        var row = document.createElement("div");
+        row.className = "beat";
+        row.appendChild(makeLine("beat-label", beat.label));
+
+        var main = document.createElement("div");
+        main.className = "beat-main";
+        main.appendChild(makeLine("beat-name", beat.name));
+        beat.lines.forEach(function (line) {
+            main.appendChild(makeLine("beat-line", line));
+        });
+        row.appendChild(main);
+        elModalBody.appendChild(row);
+    });
+
+    /* オチ */
+    var box = document.createElement("div");
+    box.className = "ending-box";
+    box.appendChild(makeLine("ending-type", "オチ — " + detail.endingType));
+    box.appendChild(makeLine("ending-text", detail.endingText));
+    elModalBody.appendChild(box);
+
+    elModalBody.scrollTop = 0;
+}
+
+function openDetail(item) {
+    detailItem = item;
+    renderDetail();
+    elModal.classList.add("open");
+    /* 読んでいる間は自動更新を止める */
+    if (!state.paused) {
+        pausedForModal = true;
+        setPaused(true);
+    }
+}
+
+function closeDetail() {
+    if (!detailItem) {
+        return;
+    }
+    elModal.classList.remove("open");
+    detailItem = null;
+    if (pausedForModal) {
+        pausedForModal = false;
+        setPaused(false);
+    }
+}
+
+document.getElementById("modal-close").addEventListener("click", closeDetail);
+document.getElementById("modal-ok").addEventListener("click", closeDetail);
+document.getElementById("modal-back").addEventListener("click", closeDetail);
+document.getElementById("modal-copy").addEventListener("click", function () {
+    if (detailItem) {
+        copyText(detailToPlainText(detailItem));
+    }
+});
+document.getElementById("modal-reroll").addEventListener("click", function () {
+    if (!detailItem) {
+        return;
+    }
+    detailItem.detailSeed = (detailItem.detailSeed || 0) + 1;
+    persist();
+    if (lastPersistTrimmed) {
+        renderFeed();
+    }
+    renderDetail();
+});
+
+/* =====================================================
    イベント
 ===================================================== */
 document.getElementById("btn-next").addEventListener("click", function () {
@@ -1569,6 +2105,12 @@ bindSegment("filter-seg", "filter", "data-filter", function () {
    キーボード操作
 */
 document.addEventListener("keydown", function (e) {
+    if (detailItem) {
+        if (e.key === "Escape") {
+            closeDetail();
+        }
+        return;
+    }
     if (e.key === " " || e.code === "Space") {
         e.preventDefault();
         setPaused(!state.paused);
